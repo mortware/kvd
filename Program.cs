@@ -17,7 +17,7 @@ namespace karaoke_dl
         private const string myFilesUrl = "my/download.html";
 
         private const string username = "cullumsri@sky.com";
-        private const string password = "Mapex24";
+        private const string password = "MapexHRS";
 
         private const string GetMixJs = "mixer.getMix();return false;";
 
