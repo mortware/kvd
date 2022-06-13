@@ -40,7 +40,7 @@ const filesUrl = "my/download.html";
         .filter((item) => item)
         .join("_");
       fileName = `${String(trackIndex).padStart(2, "0")}_${fileName}`;
-      let filePath = path.join(__dirname, dir, `${fileName}.mp3`)
+      let filePath = path.join(config.downloadPath, dir, `${fileName}.mp3`)
       console.log(filePath);
       await downloadMix(page, filePath);
     }
@@ -60,7 +60,7 @@ const filesUrl = "my/download.html";
         .filter((item) => item)
         .join("_");
       fileName = `play_along_${fileName}`;
-      let filePath = path.join(__dirname, dir, `${fileName}.mp3`);
+      let filePath = path.join(config.downloadPath, dir, `${fileName}.mp3`);
       console.log(filePath);
       let doesFileExist = await fileExists(filePath);
       if (doesFileExist) {
@@ -130,10 +130,10 @@ const fetchSongInfo = async (page) => {
   const artist = await getInnerText(page, "#navbar li:nth-last-child(2)");
 
   console.log(`${artist} - ${title}`);
-  const dir = `tracks\\${artist} - ${title}`;
+  const dir = `${artist} - ${title}`;
   const infoElement = await page.$("#audio-infos");
   await infoElement.screenshot({
-    path: path.join(__dirname, dir, `_info.png`),
+    path: path.join(config.downloadPath, dir, `_info.png`),
   });
   return dir;
 };
