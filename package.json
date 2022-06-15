@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "playwright": "^1.22.2",
+    "terminal-kit": "^2.4.0"
+  }
+}
