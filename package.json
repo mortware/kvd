@@ -1,6 +1,39 @@
 {
+  "name": "@mortware/kvd",
+  "bin": {
+    "kvd": "dist/cli.js"
+  },
+  "version": "0.0.1",
+  "description": "KVD CLI and Actions",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "link-cli": "npm unlink kvd && npm link",
+    "dev": "tsc -w"
+  },
+  "keywords": [
+    "cli",
+    "kvd",
+    "actions"
+  ],
+  "author": "mortware",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/mssql": "^9.1.5",
+    "@types/node": "^22.5.4",
+    "@types/uuid": "^10.0.0",
+    "@types/yargs": "^17.0.33",
+    "typescript": "^5.5.4"
+  },
   "dependencies": {
-    "playwright": "^1.22.2",
-    "terminal-kit": "^2.4.0"
+    "@azure/identity": "^4.4.1",
+    "@azure/storage-blob": "^12.24.0",
+    "@azure/storage-queue": "^12.23.0",
+    "dotenv": "^16.4.5",
+    "mssql": "^11.0.1",
+    "playwright": "^1.46.1",
+    "uuid": "^10.0.0",
+    "yargs": "^17.7.2"
   }
 }
+
