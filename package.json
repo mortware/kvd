@@ -5,7 +5,7 @@
   },
   "version": "0.0.3",
   "description": "KVD CLI and Actions",
-  "main": "index.js",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist/"
@@ -41,3 +41,4 @@
     "yargs": "^17.7.2"
   }
 }
+
