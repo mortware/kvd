@@ -6,6 +6,10 @@
   "version": "0.0.2",
   "description": "KVD CLI and Actions",
   "main": "index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/"
+  ],
   "scripts": {
     "build": "tsc",
     "link-cli": "npm unlink kvd && npm link",
@@ -37,3 +41,4 @@
     "yargs": "^17.7.2"
   }
 }
+
