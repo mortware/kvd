@@ -3,7 +3,7 @@
   "bin": {
     "kvd": "dist/cli.js"
   },
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "KVD CLI and Actions",
   "main": "index.js",
   "types": "dist/index.d.ts",
@@ -41,4 +41,3 @@
     "yargs": "^17.7.2"
   }
 }
-
