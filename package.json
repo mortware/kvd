@@ -3,7 +3,7 @@
   "bin": {
     "kvd": "dist/cli.js"
   },
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "KVD CLI and Actions",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
