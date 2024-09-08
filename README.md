@@ -8,8 +8,7 @@ This package is configured through a JSON configuration file. The configuration 
 
 Create a file named `kvd-config.json` in the root of your project with the following structure:
 
-```
-json
+```json
 {
   "azure": {
     "blob": {
