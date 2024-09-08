@@ -13,6 +13,7 @@ export type SongInfo = {
         name: string;
         slug: string;
         color: string;
+        order: number;
     }[];
     mixes?: {
         id: string;

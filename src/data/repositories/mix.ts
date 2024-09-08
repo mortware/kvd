@@ -15,7 +15,7 @@ export class MixRepository {
     const existingMix = await this.find(slug, trackId);
 
     if (existingMix) {
-      logInfo(`Mix '${name}' for track '${trackId}' already exists.`);
+      logInfo(`Mix '${name}' for track '${trackId}' already exists in the database.`);
       return;
     }
 

@@ -82,7 +82,7 @@ export default function songPage(page: Page) {
     };
   };
 
-  async function getStems(): Promise<{ index: number; name: string; slug: string; color: string; }[]> {
+  async function getStems(): Promise<{ index: number; name: string; slug: string; color: string; order: number; }[]> {
     logDebug("Fetching stems");
     const stemElements = await page.$$(".mixer__inner > .track");
     const stems = [];
@@ -112,6 +112,7 @@ export default function songPage(page: Page) {
         name,
         slug,
         color,
+        order: index,
       });
     }
     return stems;
