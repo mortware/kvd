@@ -1,5 +1,3 @@
-import config from '../consts';
-
 export function logDebug(message: string) {
     console.debug(`[${new Date().toISOString().substring(11, 23)}] DEBUG`, message);
 };
