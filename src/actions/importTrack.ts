@@ -1,6 +1,6 @@
 import blob from "../data/blob";
 import db from "../data/db";
-import { logError, logInfo } from "../lib/logger";
+import { logDebug, logError, logInfo } from "../lib/logger";
 import createContext, { Context } from "../lib/setup";
 import songPage from "../pages/songPage";
 import { z } from "zod";
@@ -37,25 +37,43 @@ async function importTrack(args: ImportTrackArgs) {
     if (requiredReset) {
       const fullMix = songInfo?.mixes?.find(mix => !mix.id);
       if (fullMix) {
-        const stream = await page.getMixStream(fullMix.id);
-        await blob.uploadStream(stream, track.Slug, fullMix.slug, '.mp3');
-        await db.mixes.create(track.Id, fullMix.name, fullMix.slug, `${track.Slug}/${fullMix.slug}.mp3`);
+        const blobName = `${track.Slug}/${fullMix.slug}.mp3`;
+        const exists = await blob.checkExists(blobName);
+        if (exists) {
+          logInfo(`Full mix '${blobName}' already exists in blob storage. Skipping upload.`);
+        } else {
+          const stream = await page.getMixStream(fullMix.id);
+          await blob.uploadStream(stream, blobName);
+        }
+        await db.mixes.create(track.Id, fullMix.name, fullMix.slug, blobName);
       }
     }
 
     if (songInfo.mixes) {
       for (const mix of songInfo.mixes) {
-        const stream = await page.getMixStream(mix.id);
-        await blob.uploadStream(stream, track.Slug, mix.slug, '.mp3');
-        await db.mixes.create(track.Id, mix.name, mix.slug, `${track.Slug}/${mix.slug}.mp3`);
+        const blobName = `${track.Slug}/${mix.slug}.mp3`;
+        const exists = await blob.checkExists(blobName);
+        if (exists) {
+          logInfo(`Mix '${blobName}' already exists in blob storage. Skipping upload.`);
+        } else {
+          const stream = await page.getMixStream(mix.id);
+          await blob.uploadStream(stream, blobName);
+        }
+        await db.mixes.create(track.Id, mix.name, mix.slug, blobName);
       }
     }
 
     if (songInfo.stems) {
       for (const stem of songInfo.stems) {
-        const stream = await page.getStemStream(stem.index);
-        await blob.uploadStream(stream, track.Slug, stem.slug, '.mp3');
-        await db.stems.create(track.Id, stem.name, stem.slug, "#000000", `${track.Slug}/${stem.slug}.mp3`, stem.order);
+        const blobName = `${track.Slug}/${stem.slug}.mp3`;
+        const exists = await blob.checkExists(blobName);
+        if (exists) {
+          logInfo(`Stem '${blobName}' already exists in blob storage. Skipping upload.`);
+        } else {
+          const stream = await page.getStemStream(stem.index);
+          await blob.uploadStream(stream, blobName);
+        }
+        await db.stems.create(track.Id, stem.name, stem.slug, "#000000", blobName, stem.order);
       }
     }
 

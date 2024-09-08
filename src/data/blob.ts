@@ -74,21 +74,16 @@ async function deleteFile(fileName: string): Promise<void> {
   }
 }
 
-async function uploadStream(readableStream: Readable, trackSlug: string, slug: string, fileExtension: string): Promise<string> {
+async function checkExists(blobName: string): Promise<boolean> {
+  const client = await getContainerClient();
+  const blockBlobClient = client.getBlockBlobClient(blobName);
+  return await blockBlobClient.exists();
+}
+
+async function uploadStream(readableStream: Readable, blobName: string): Promise<string> {
   const client = await getContainerClient();
   try {
-    const blobName = `${trackSlug}/${slug}${fileExtension}`;
-    logDebug(`Checking if file "${blobName}" already exists in blob storage`);
-
     const blockBlobClient = client.getBlockBlobClient(blobName);
-
-    const exists = await blockBlobClient.exists();
-
-    if (exists) {
-      logInfo(`File "${blobName}" already exists in blob storage. Skipping upload.`);
-      return blobName;
-    }
-
     logDebug(`Uploading stream to blob storage as "${blobName}"`);
 
     await blockBlobClient.uploadStream(readableStream);
@@ -101,6 +96,7 @@ async function uploadStream(readableStream: Readable, trackSlug: string, slug: s
 }
 
 const blob = {
+  checkExists,
   uploadFile,
   deleteFile,
   uploadStream, // Add this new function to the exported object
