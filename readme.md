@@ -2,7 +2,7 @@
 
 ## Configuration
 
-This package can be configured either through a JSON configuration file or environment variables.
+This package can be configured through a JSON configuration file or environment variables. The configuration is set at startup and remains constant throughout the application's lifecycle.
 
 ### Using a configuration file
 
@@ -41,36 +41,4 @@ Set the following environment variables:
 - `AZURE_SQL_DATABASE`
 - `PROCESS_DELAY`
 
-## Usage
-
-### Importing and initializing the package
-```typescript 
-import { initialize, getConfig } from "@mortware/kvd";      
-
-initialize({      
-    azureBlobStorageUrl: "your-blob-storage-url",     
-    azureBlobStorageContainer: "your-container-name",     
-    azureQueueStorageUrl: "your-queue-storage-url",
-    azureQueueImportName: "your-queue-name",
-    dbServer: "your-db-server",
-    dbName: "your-db-name",
-    processDelay: "delay-in-ms"
-});
-```
-
-### Importing and using the package
-
-```typescript
-import { getConfig } from "@mortware/kvd";
-
-const config = getConfig(); 
-
-// Use the config object to access the configured values
-console.log(config.azureBlobStorageUrl);
-console.log(config.azureBlobStorageContainer);
-console.log(config.azureQueueStorageUrl);
-console.log(config.azureQueueImportName);
-console.log(config.dbServer);
-console.log(config.dbName); 
-console.log(config.processDelay);
-```
+Environment variables take precedence over the configuration file.
