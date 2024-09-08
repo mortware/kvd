@@ -1,15 +1,22 @@
-export function logDebug(message: string) {
-    console.debug(`[${new Date().toISOString().substring(11, 23)}] DEBUG`, message);
-};
+type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
 
-export function logInfo(message: string) {
-    console.log(`[${new Date().toISOString().substring(11, 23)}] INFO`, message);
-};
+function formatMessage(level: LogLevel, ...args: any[]): string[] {
+    const timestamp = new Date().toISOString().substring(11, 23);
+    return [`[${timestamp}] ${level}`, ...args];
+}
 
-export function logWarning(message: string) {
-    console.warn(`[${new Date().toISOString().substring(11, 23)}] WARN`, message);
-};
+export function logDebug(...args: any[]) {
+    console.debug(...formatMessage('DEBUG', ...args));
+}
 
-export function logError(message: string) {
-    console.error(`[${new Date().toISOString().substring(11, 23)}] ERROR`, message);
-};
+export function logInfo(...args: any[]) {
+    console.log(...formatMessage('INFO', ...args));
+}
+
+export function logWarning(...args: any[]) {
+    console.warn(...formatMessage('WARN', ...args));
+}
+
+export function logError(...args: any[]) {
+    console.error(...formatMessage('ERROR', ...args));
+}
