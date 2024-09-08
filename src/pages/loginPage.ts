@@ -1,6 +1,7 @@
 import { Page } from "playwright";
 import { logDebug, logInfo } from "../lib/logger";
 import { KaraokeVersionConfig } from "../consts";
+import path from "path";
 
 export default function useLoginPage(page: Page) {
   const usernameInput = page.locator("#frm_login");
@@ -8,9 +9,9 @@ export default function useLoginPage(page: Page) {
   const submitButton = page.locator("#sbm");
 
   async function navigate() {
-    const url = `${KaraokeVersionConfig.baseUrl}/${KaraokeVersionConfig.loginUrl}`
+    const url = path.join(KaraokeVersionConfig.baseUrl, KaraokeVersionConfig.loginUrl);
     logDebug(`Navigating to ${url}`);
-    await page.goto(`${url}`);
+    await page.goto(url);
   };
 
   async function login(username: string, password: string) {

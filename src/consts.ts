@@ -1,8 +1,8 @@
 export const KaraokeVersionConfig = {
-    "baseUrl": "https://www.karaoke-version.com",
-    "loginUrl": "my/login.html",
+    baseUrl: "https://www.karaoke-version.com",
+    loginUrl: "my/login.html",
 }
 
 export const ConfigDefaults = {
-    "configFileName": "kvd-config.json"
+    configFileName: "kvd-config.json"
 }

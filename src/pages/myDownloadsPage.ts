@@ -2,10 +2,11 @@ import { Page } from "playwright";
 import { logDebug, logError, logInfo } from "../lib/logger";
 import playwright from "playwright";
 import { KaraokeVersionConfig } from "../consts";
+import path from "path";
 
 export default function myDownloadPage(page: Page) {
   async function navigate() {
-    const url = `${KaraokeVersionConfig.baseUrl}/my/download.html`;
+    const url = path.join(KaraokeVersionConfig.baseUrl, "my/download.html");
     logDebug(`Navigating to ${url}`);
     await page.goto(`${url}`);
   }
