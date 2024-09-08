@@ -8,7 +8,7 @@ import { z } from "zod";
 const ImportTrackArgsSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
-  url: z.string().url("URL is required"),
+  url: z.string().min(1, "URL is required"),
 });
 type ImportTrackArgs = z.infer<typeof ImportTrackArgsSchema>;
 
