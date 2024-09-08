@@ -9,7 +9,7 @@ if (fs.existsSync(configPath)) {
     fileConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
 }
 
-const config = {
+const KvdConfiguration = {
     azure: {
         blob: {
             // Azure Blob Storage URL
@@ -44,4 +44,4 @@ const config = {
     processDelay: fileConfig.processDelay || process.env.PROCESS_DELAY,
 };
 
-export default config;
+export default KvdConfiguration;
