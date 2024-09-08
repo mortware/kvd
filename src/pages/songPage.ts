@@ -1,10 +1,10 @@
 import { Page } from "playwright";
 import { Readable } from "stream";
-import config from "../config.js";
 import { logDebug, logError, logInfo, logWarning } from "../lib/logger";
 import { SongInfo } from "../lib/models.js";
 import { fileExists, sanitise, slugify } from "../lib/utils.js";
 import path from "path";
+import { KaraokeVersionConfig } from "../consts";
 
 export default function songPage(page: Page) {
   const pitchValueSpan = page.locator("span.pitch__value");
@@ -13,7 +13,7 @@ export default function songPage(page: Page) {
   const keyUpButton = page.locator('button.btn--pitch:nth-of-type(2)');   // Second button is "Key up"
 
   async function navigate(relativeUrl: string): Promise<string> {
-    const url = path.join(config.baseUrl, 'custombackingtrack', relativeUrl);
+    const url = path.join(KaraokeVersionConfig.baseUrl, 'custombackingtrack', relativeUrl);
     logDebug(`Navigating to ${url}`);
     await page.goto(url);
     await page.waitForLoadState("networkidle");

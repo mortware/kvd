@@ -4,16 +4,15 @@ import createContext from "../lib/setup";
 import myDownloadsPage from "../pages/myDownloadsPage";
 import fs from "fs";
 
-const importQueueName = process.env.AZURE_QUEUE_IMPORT_NAME as string;
-
 type CatalogArgs = {
   username: string;
   password: string;
   output?: string;  // Make output optional
   queue: boolean;
+  importQueueName: string
 };
 
-async function fetchCatalog({ username, password, output: outputFile, queue: sendToQueue }: CatalogArgs) {
+async function fetchCatalog({ username, password, output: outputFile, queue: sendToQueue, importQueueName }: CatalogArgs) {
 
   console.log(`Hello, ${username}! Fetching catalog...`);
 

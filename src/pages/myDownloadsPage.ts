@@ -1,11 +1,11 @@
 import { Page } from "playwright";
-import config from "../config";
 import { logDebug, logError, logInfo } from "../lib/logger";
 import playwright from "playwright";
+import { KaraokeVersionConfig } from "../consts";
 
 export default function myDownloadPage(page: Page) {
   async function navigate() {
-    const url = `${config.baseUrl}/my/download.html`;
+    const url = `${KaraokeVersionConfig.baseUrl}/my/download.html`;
     logDebug(`Navigating to ${url}`);
     await page.goto(`${url}`);
   }
@@ -40,8 +40,8 @@ export default function myDownloadPage(page: Page) {
       const nextBtn = await page.$("div.pagination > a.next");
       nextUrl = nextBtn ? await nextBtn.getAttribute("href") : null;
       if (nextUrl) {
-        logDebug(`Navigating to ${config.baseUrl}${nextUrl}`);
-        await page.goto(`${config.baseUrl}${nextUrl}`);
+        logDebug(`Navigating to ${KaraokeVersionConfig.baseUrl}${nextUrl}`);
+        await page.goto(`${KaraokeVersionConfig.baseUrl}${nextUrl}`);
       }
 
     } while (nextUrl);
