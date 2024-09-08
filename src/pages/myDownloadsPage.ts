@@ -42,8 +42,9 @@ export default function myDownloadPage(page: Page) {
       const nextBtn = await page.$("div.pagination > a.next");
       nextUrl = nextBtn ? await nextBtn.getAttribute("href") : null;
       if (nextUrl) {
-        logDebug(`Navigating to ${KaraokeVersionConfig.baseUrl}${nextUrl}`);
-        await page.goto(`${KaraokeVersionConfig.baseUrl}${nextUrl}`);
+        const url = path.join(KaraokeVersionConfig.baseUrl, nextUrl);
+        logDebug(`Navigating to ${url}`);
+        await page.goto(url);
       }
 
     } while (nextUrl);
