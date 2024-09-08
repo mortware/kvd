@@ -1,7 +1,8 @@
 import { CommandModule } from "yargs";
 import { clearQueue, listQueue } from "../actions";
+import KvdConfiguration from '../config';
 
-const importQueueName = process.env.AZURE_QUEUE_IMPORT_NAME as string;
+const importQueueName = KvdConfiguration.azure.queue.import as string;
 
 type ImportQueueArgs = {
   action: 'clear' | 'list';

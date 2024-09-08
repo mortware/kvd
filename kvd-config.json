@@ -1,0 +1,16 @@
+{
+  "azure": {
+    "queue": {
+      "url": "https://mortware.queue.core.windows.net",
+      "import": "import"
+    },
+    "blob": {
+      "url": "https://mortware.blob.core.windows.net",
+      "container": "tracks"
+    },
+    "sql": {
+      "server": "mortware.database.windows.net",
+      "database": "mortware"
+    }
+  }
+}

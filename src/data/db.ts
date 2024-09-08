@@ -3,12 +3,13 @@ import { logDebug, logError } from '../lib/logger';
 import { TrackRepository } from './repositories/track';
 import { StemRepository } from './repositories/stem';
 import { MixRepository } from './repositories/mix';
+import KvdConfiguration from '../config';
 
 let pool: sql.ConnectionPool | null = null;
 
 const config: sql.config = {
-  server: process.env.DB_SERVER as string,
-  database: process.env.DB_NAME as string,
+  server: KvdConfiguration.azure.sql.server,
+  database: KvdConfiguration.azure.sql.database,
   options: {
     encrypt: true,
     enableArithAbort: true
@@ -46,7 +47,7 @@ async function closeConnection(): Promise<void> {
 const db = {
   tracks: new TrackRepository(getConnection),
   stems: new StemRepository(getConnection),
-  mixes: new MixRepository(getConnection), // Add this line
+  mixes: new MixRepository(getConnection),
   close: closeConnection
 };
 

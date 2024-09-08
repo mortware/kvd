@@ -2,8 +2,9 @@ import { QueueServiceClient, QueueClient } from '@azure/storage-queue';
 import { logError, logInfo, logDebug, logWarning } from '../lib/logger';
 import { DefaultAzureCredential } from '@azure/identity';
 import { encodeBase64ToJson } from '../lib/utils';
+import KvdConfiguration from '../config';
 
-const queueStorageUrl = process.env.AZURE_QUEUE_STORAGE_URL;
+const queueStorageUrl = KvdConfiguration.azure.queue.url;
 const defaultAzureCredential = new DefaultAzureCredential();
 
 if (!queueStorageUrl) {

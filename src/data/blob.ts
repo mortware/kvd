@@ -4,11 +4,12 @@ import fs from 'fs/promises';
 import path from 'path';
 import { DefaultAzureCredential } from '@azure/identity';
 import { Readable } from 'stream';
+import KvdConfiguration from '../config';
 
 let containerClient: ContainerClient | null = null;
 
-const blobStorageUrl = process.env.AZURE_BLOB_STORAGE_URL;
-const blobStorageContainerName = process.env.AZURE_BLOB_STORAGE_CONTAINER;
+const blobStorageUrl = KvdConfiguration.azure.blob.url;
+const blobStorageContainerName = KvdConfiguration.azure.blob.container;
 const defaultAzureCredential = new DefaultAzureCredential();
 
 if (!blobStorageUrl) {
