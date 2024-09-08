@@ -12,6 +12,7 @@ export default function myDownloadPage(page: Page) {
   }
 
   async function getTracks() {
+    logDebug("Fetching tracks");
     const tracks: string[] = [];
     let nextUrl: string | null = "";
 

@@ -1,8 +1,8 @@
 import { Page } from "playwright";
 import { Readable } from "stream";
-import { logDebug, logError, logInfo, logWarning } from "../lib/logger";
+import { logDebug, logError, logWarning } from "../lib/logger";
 import { SongInfo } from "../lib/models.js";
-import { fileExists, sanitise, slugify } from "../lib/utils.js";
+import { sanitise, slugify } from "../lib/utils.js";
 import path from "path";
 import { KaraokeVersionConfig } from "../consts";
 
@@ -54,6 +54,7 @@ export default function songPage(page: Page) {
   }
 
   async function getSongInfo(): Promise<SongInfo> {
+    logDebug("Fetching song info");
     const titleElement = await page.$("#navbar li:last-child");
     const titleText = await titleElement?.innerText() ?? "Unknown Title";
 
@@ -82,7 +83,7 @@ export default function songPage(page: Page) {
   };
 
   async function getStems(): Promise<{ index: number; name: string; slug: string; color: string; }[]> {
-
+    logDebug("Fetching stems");
     const stemElements = await page.$$(".mixer__inner > .track");
     const stems = [];
     for (let [index, stemElement] of stemElements.entries()) {
@@ -117,6 +118,7 @@ export default function songPage(page: Page) {
   };
 
   async function getMixes(): Promise<{ id: string; name: string; slug: string; }[]> {
+    logDebug("Fetching mixes");
     const mixes = [];
     mixes.push({
       id: "",
@@ -141,7 +143,7 @@ export default function songPage(page: Page) {
   }
 
   async function getTempo(): Promise<{ tempo: number, tempoVariable: boolean }> {
-
+    logDebug("Fetching tempo");
     let tempoElement = await page.locator("#audio-infos p", { hasText: "Tempo:" }).innerText();
 
     const tempo = parseFloat(tempoElement.replace(/[^0-9.]/g, ""));
@@ -154,6 +156,7 @@ export default function songPage(page: Page) {
   }
 
   async function getDuration(): Promise<string> {
+    logDebug("Fetching duration");
     const durationText = await page.locator("#audio-infos p", { hasText: "Duration:" }).innerText();
     const regex = /(\d{2}:\d{2})/;
     const match = durationText.match(regex);
@@ -167,7 +170,7 @@ export default function songPage(page: Page) {
   };
 
   async function getKey(): Promise<string> {
-
+    logDebug("Fetching key");
     const keyText = await page.locator("#audio-infos p", { hasText: "key" }).innerText();
     const regex = /([A-G][#b]?(m|M)?)/;
 
@@ -181,60 +184,60 @@ export default function songPage(page: Page) {
     }
   }
 
-  async function downloadMix(id: string, slug: string, folder: string): Promise<void> {
+  // async function downloadMix(id: string, slug: string, folder: string): Promise<void> {
 
-    let filename: string;
+  //   let filename: string;
 
-    if (!id) {
-      // Full mix, so reset the mixer and hit the download button
-      resetMixer();
-      filename = "full-mix.mp3";
-    } else {
-      // Preset mix, so click the preset
-      const presetElement = await page.$(`.preset-container > .preset[data-preset-id='${id}']`);
-      if (presetElement == null) {
-        const error = `Preset mix '${slug}' not found`;
-        logError(error);
-        throw Error(error)
-      }
-      await presetElement.click();
-      filename = `${slug}.mp3`;
-    }
-    const downloadPath = path.join(folder, filename);
+  //   if (!id) {
+  //     // Full mix, so reset the mixer and hit the download button
+  //     resetMixer();
+  //     filename = "full-mix.mp3";
+  //   } else {
+  //     // Preset mix, so click the preset
+  //     const presetElement = await page.$(`.preset-container > .preset[data-preset-id='${id}']`);
+  //     if (presetElement == null) {
+  //       const error = `Preset mix '${slug}' not found`;
+  //       logError(error);
+  //       throw Error(error)
+  //     }
+  //     await presetElement.click();
+  //     filename = `${slug}.mp3`;
+  //   }
+  //   const downloadPath = path.join(folder, filename);
 
-    await download(downloadPath);
-  }
+  //   await download(downloadPath);
+  // }
 
-  async function downloadStem(index: number, slug: string, folder: string): Promise<void> {
-    // Reset mixer and solo the track
-    await resetMixer();
-    await soloTrack(index);
+  // async function downloadStem(index: number, slug: string, folder: string): Promise<void> {
+  //   // Reset mixer and solo the track
+  //   await resetMixer();
+  //   await soloTrack(index);
 
-    const filename = `${slug}.mp3`;
-    const downloadPath = path.join(folder, filename);
+  //   const filename = `${slug}.mp3`;
+  //   const downloadPath = path.join(folder, filename);
 
-    await download(downloadPath);
-  }
+  //   await download(downloadPath);
+  // }
 
-  async function download(downloadPath: string): Promise<void> {
+  // async function download(downloadPath: string): Promise<void> {
 
-    try {
-      if (fileExists(downloadPath)) {
-        logInfo(`${downloadPath} SKIPPED`);
-        return;
-      } else {
-        const [download] = await Promise.all([
-          page.waitForEvent("download", { timeout: 120 * 1000 }),
-          page.click("a.download", { timeout: 120 * 1000 }),
-        ]);
-        await download.saveAs(downloadPath);
-        await page.click(".js-modal-close.modal__close");
-        logInfo(`${downloadPath} OK`);
-      }
-    } catch (error) {
-      logError(JSON.stringify(error));
-    }
-  }
+  //   try {
+  //     if (fileExists(downloadPath)) {
+  //       logInfo(`${downloadPath} SKIPPED`);
+  //       return;
+  //     } else {
+  //       const [download] = await Promise.all([
+  //         page.waitForEvent("download", { timeout: 120 * 1000 }),
+  //         page.click("a.download", { timeout: 120 * 1000 }),
+  //       ]);
+  //       await download.saveAs(downloadPath);
+  //       await page.click(".js-modal-close.modal__close");
+  //       logInfo(`${downloadPath} OK`);
+  //     }
+  //   } catch (error) {
+  //     logError(JSON.stringify(error));
+  //   }
+  // }
 
   async function resetMixer() {
     logDebug("Resetting mixer");
@@ -266,8 +269,10 @@ export default function songPage(page: Page) {
 
   async function getMixStream(id: string): Promise<Readable> {
     if (!id) {
+      logDebug("Downloading full mix");
       await resetMixer();
     } else {
+      logDebug(`Downloading preset mix '${id}'`);
       const presetElement = await page.$(`.preset-container > .preset[data-preset-id='${id}']`);
       if (presetElement == null) {
         const error = `Preset mix '${id}' not found`;
@@ -280,7 +285,7 @@ export default function songPage(page: Page) {
   }
 
   async function getDownloadStream(): Promise<Readable> {
-    logDebug("Getting download stream...");
+    logDebug("Fetching download stream...");
     const [download] = await Promise.all([
       page.waitForEvent("download", { timeout: 120 * 1000 }),
       page.click("a.download", { timeout: 120 * 1000 }),
