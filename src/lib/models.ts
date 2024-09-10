@@ -1,12 +1,10 @@
 export type SongInfo = {
     artist: string;
     title: string;
-    url: string;
     tempo: number;
     tempoVariable: boolean;
     duration: string;
     key: string;
-    source: string;
     slug: string;
     stems?: {
         index: number;
@@ -33,6 +31,7 @@ export type Track = {
     Duration: string;
     SongKey: string;
     Slug: string;
+    Created?: Date;
     Stems: Stem[];
     Mixes: Mix[];
 }

@@ -23,6 +23,13 @@ export const importTrackCommand: CommandModule<{}, ImportTrackArgs> = {
         description: 'URL of the track to import',
         type: 'string',
         demandOption: true,
+      })
+      .option('overwrite', {
+        alias: 'o',
+        describe: 'Overwrite mode',
+        choices: ['none', 'file', 'data', 'all'] as const,
+        type: 'string',
+        default: 'none' as const,
       });
   },
   handler: importTrack,

@@ -1,5 +1,5 @@
 import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
-import { logError, logInfo, logDebug } from '../lib/logger';
+import { logError, logInfo, logDebug, logWarning } from '../lib/logger';
 import fs from 'fs/promises';
 import path from 'path';
 import { DefaultAzureCredential } from '@azure/identity';
@@ -62,12 +62,25 @@ async function uploadFile(filePath: string, trackSlug: string, slug: string): Pr
   }
 }
 
+async function deleteFolder(folderName: string): Promise<void> {
+  const client = await getContainerClient();
+  try {
+    const blobs = client.listBlobsFlat({ prefix: folderName });
+    for await (const blob of blobs) {
+      await client.getBlockBlobClient(blob.name).delete();
+    }
+    logWarning(`Folder "${folderName}" deleted successfully from blob storage`);
+  } catch (error) {
+    logError(`Error deleting folder "${folderName}" from blob storage: ${error}`);
+  }
+}
+
 async function deleteFile(fileName: string): Promise<void> {
   const client = await getContainerClient();
   try {
     const blockBlobClient = client.getBlockBlobClient(fileName);
     await blockBlobClient.delete();
-    logInfo(`File "${fileName}" deleted successfully from blob storage`);
+    logWarning(`File "${fileName}" deleted successfully from blob storage`);
   } catch (error) {
     logError(`Error deleting file "${fileName}" from blob storage: ${error}`);
     throw error;
@@ -84,7 +97,6 @@ async function uploadStream(readableStream: Readable, blobName: string): Promise
   const client = await getContainerClient();
   try {
     const blockBlobClient = client.getBlockBlobClient(blobName);
-    logDebug(`Uploading stream to blob storage as "${blobName}"`);
 
     await blockBlobClient.uploadStream(readableStream);
     logInfo(`File "${blobName}" uploaded successfully to blob storage`);
@@ -95,11 +107,26 @@ async function uploadStream(readableStream: Readable, blobName: string): Promise
   }
 }
 
+async function checkFolderExists(folderName: string): Promise<boolean> {
+  const client = await getContainerClient();
+  try {
+    const blobs = client.listBlobsFlat({ prefix: folderName });
+    const iterator = blobs.byPage({ maxPageSize: 1 });
+    const firstPage = await iterator.next();
+    return !firstPage.done;
+  } catch (error) {
+    logError(`Error checking folder "${folderName}" existence in blob storage: ${error}`);
+    throw error;
+  }
+}
+
 const blob = {
   checkExists,
   uploadFile,
   deleteFile,
-  uploadStream, // Add this new function to the exported object
+  uploadStream,
+  deleteFolder,
+  checkFolderExists, // Add the new function to the exported object
 };
 
 export default blob;

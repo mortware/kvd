@@ -1,16 +1,28 @@
 import playwright from "playwright";
 import useLoginPage from "../pages/loginPage.js";
 import KvdConfiguration from '../config';
+import { logDebug } from "./logger.js";
 
 export type Context = {
   page: playwright.Page;
   browser: playwright.Browser;
 }
 
-const actionDelay = KvdConfiguration.processDelay || 0;
+
 
 export default async function createContext(username: string, password: string): Promise<Context> {
-  const browser = await playwright["chromium"].launch({ headless: true, slowMo: actionDelay });
+
+  const actionDelay = KvdConfiguration.processDelay || 0;
+  logDebug(`Action delay: ${actionDelay}`);
+  const headless = KvdConfiguration.headless;
+  logDebug(`Headless: ${headless}`);
+
+  const options = {
+    headless,
+    slowMo: actionDelay,
+  };
+
+  const browser = await playwright["chromium"].launch(options);
   const context = await browser.newContext();
 
   const page = await context.newPage();

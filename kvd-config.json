@@ -12,5 +12,7 @@
       "server": "mortware.database.windows.net",
       "database": "mortware"
     }
-  }
+  },
+  "headless": true,
+  "processDelay": 0
 }

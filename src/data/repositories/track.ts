@@ -11,6 +11,19 @@ export class TrackRepository {
     this.getConnection = getConnection;
   }
 
+  async delete(id: string): Promise<void> {
+    try {
+      const db = await this.getConnection();
+      await db.request()
+        .input("Id", sql.UniqueIdentifier, id)
+        .query(`DELETE FROM [Tracks] WHERE [Id] = @Id`);
+      logInfo(`Track deleted: ${id}`);
+    } catch (err) {
+      logError('Error deleting track');
+      throw err;
+    }
+  }
+
   async create(artist: string, title: string, url: string, user: string, tempo: number, tempoVariable: boolean, duration: string, key: string): Promise<Track | null> {
     try {
       const db = await this.getConnection();

@@ -5,20 +5,16 @@ dotenv.config();
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { catalogCommand } from './commands/catalog.js';
-import { downloadCommand } from './commands/download.js';
 import { checkCommand } from './commands/check.js';
 import db from './data/db.js';
 import { logError } from './lib/logger.js';
-import { uploadCommand } from './commands/upload.js';
 import { importCommand } from './commands/import.js';
 
 yargs(hideBin(process.argv))
   .scriptName("kvd")
   .usage("Usage: $0 <command> [options]")
   .command(catalogCommand)
-  .command(downloadCommand)
   .command(checkCommand)
-  .command(uploadCommand)
   .command(importCommand)
   .command("$0", "Default command", () => { }, (argv) => {
     yargs.showHelp();

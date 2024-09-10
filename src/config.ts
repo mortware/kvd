@@ -30,6 +30,8 @@ interface KvdConfig {
     };
     /** Delay in milliseconds. Helps to slow down the automation process. */
     processDelay?: number;
+    /** Headless mode for Playwright */
+    headless?: boolean;
 }
 
 const configPath = path.join(process.cwd(), ConfigDefaults.configFileName);
@@ -38,7 +40,8 @@ let fileConfig: KvdConfig = {
         blob: { url: '', container: '' },
         queue: { url: '' },
         sql: { server: '', database: '' }
-    }
+    },
+    headless: true,
 };
 
 if (fs.existsSync(configPath)) {
@@ -76,6 +79,8 @@ const KvdConfiguration: KvdConfig = {
     },
     /** Process delay in milliseconds */
     processDelay: fileConfig.processDelay ?? 0,
+    /** Headless mode for Playwright */
+    headless: fileConfig.headless ?? true,
 };
 
 // Add this validation schema
