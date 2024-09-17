@@ -1,5 +1,12 @@
 # @mortware/kvd
 
+## Process
+
+1. Catalog a users account. Creates track metadata, stems and mixes in the database.
+2. Run a SCAN operation on each track to determine missing blobs. Inserts action into queue.
+3. Process and download missing stems and mixes.
+
+
 ## Configuration
 
 This package is configured through a JSON configuration file. The configuration is set at startup and remains constant throughout the application's lifecycle.

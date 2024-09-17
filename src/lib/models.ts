@@ -1,4 +1,5 @@
 export type SongInfo = {
+    sourceId: string;
     artist: string;
     title: string;
     tempo: number;
@@ -21,37 +22,39 @@ export type SongInfo = {
 }
 
 export type Track = {
-    Id: string;
-    Artist: string;
-    Title: string;
-    SourceUrl: string;
-    SourceUser: string;
-    Tempo: number;
-    TempoVariable: boolean;
-    Duration: string;
-    SongKey: string;
-    Slug: string;
-    Created?: Date;
-    Stems: Stem[];
-    Mixes: Mix[];
+    id: string;
+    artist: string;
+    title: string;
+    slug: string;
+    source: {
+        url: string;
+        users: string[];
+        id: string;
+    },
+    tempo: {
+        bpm: number;
+        variable: boolean;
+    };
+    duration: string;
+    songKey: string;
+    created: Date;
+    updated?: Date;
+    fullMix?: Mix;
+    stems?: Stem[];
+    mixes?: Mix[];
 }
 
 export type Stem = {
-    Id: string;
-    TrackId: string;
-    Name: string;
-    Slug: string;
-    Color: string;
-    Filename: string;
-    Order: number;
-}
+    color: string;
+    order: number;
+} & TrackItem
 
 export type Mix = {
-    Id: string;
-    TrackId: string;
-    Name: string;
-    Slug: string;
-    Filename: string;
+} & TrackItem
+
+export type TrackItem = {
+    name: string;
+    slug: string;
 }
 
 export type Config = {
@@ -88,4 +91,18 @@ export type UploadDetail = {
     slug: string;
     filename?: string;
     reason?: string;
+}
+
+export type Account = {
+    id: string;
+    username: string;
+    password: string;
+    created: Date;
+    updated?: Date;
+}
+
+export type ImportRequest = {
+    import: 'all' | 'mixes' | 'stems' | 'full-mix';
+    url: string;
+    users: string[];
 }

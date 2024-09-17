@@ -91,6 +91,7 @@ export default function songPage(page: Page) {
         key: await getKey(),
         stems: await getStems(),
         mixes: await getMixes(),
+        sourceId: await getSourceId(), // Add this line
       };
       logDebug(`Song info: ${JSON.stringify(songInfo, null, 2)}`);
       return songInfo;
@@ -99,6 +100,18 @@ export default function songPage(page: Page) {
       throw error;
     }
   };
+
+  async function getSourceId(): Promise<string> {
+    try {
+      const titleElement = page.locator("h1.song-details__title");
+      const sourceId = await titleElement.getAttribute("data-prodsongid") || "";
+      logDebug(`Source ID: ${sourceId}`);
+      return sourceId;
+    } catch (error) {
+      logError('getSourceId', error);
+      throw error;
+    }
+  }
 
   async function getStems(): Promise<{ index: number; name: string; slug: string; color: string; order: number; }[]> {
     try {
@@ -285,7 +298,7 @@ export default function songPage(page: Page) {
     }
   }
 
-  async function getMixStream(id: string): Promise<Readable> {
+  async function getMixStream(id: string | undefined): Promise<Readable> {
     try {
       if (!id) {
         logDebug("Downloading full mix");
@@ -329,6 +342,8 @@ export default function songPage(page: Page) {
       throw error;
     }
   }
+
+
 
   return { navigate, getSongInfo, getStemStream, getMixStream, resetSongKey };
 }

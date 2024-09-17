@@ -1,44 +1,28 @@
-import queue from "../data/queue";
-import { logInfo } from "../lib/logger";
-import createContext from "../lib/setup";
-import myDownloadsPage from "../pages/myDownloadsPage";
-import fs from "fs";
+import { logError, logInfo } from "../lib/logger";
+import automation from "../lib/automation";
+import myDownloadsPage, { SongItem } from "../pages/myDownloadsPage";
+import cosmos from "../data/cosmos";
 
 type CatalogArgs = {
   username: string;
-  password: string;
-  output?: string;  // Make output optional
-  queue: boolean;
-  importQueueName: string
 };
 
-async function fetchCatalog({ username, password, output: outputFile, queue: sendToQueue, importQueueName }: CatalogArgs) {
+async function fetchCatalog({ username }: CatalogArgs): Promise<SongItem[]> {
+  try {
+    const account = await cosmos.getAccount(username);
+    const context = await automation.getContext(username, account.password);
 
-  console.log(`Hello, ${username}! Fetching catalog...`);
-
-  const context = await createContext(username, password);
-
-  const page = myDownloadsPage(context.page);
-  await page.navigate();
-  const tracks = await page.getTracks();
-
-  if (outputFile) {
-    fs.writeFileSync(outputFile, JSON.stringify(tracks, null, 2));
+    const page = myDownloadsPage(context.page);
+    await page.navigate();
+    const songInfos = await page.getTracks();
+    logInfo("All done!");
+    return songInfos;
+  } catch (error) {
+    logError(`Error fetching catalog: ${error}`);
+    throw error;
+  } finally {
+    await automation.close();
   }
-
-  if (sendToQueue) {
-    tracks.forEach(async track => {
-      const request = {
-        track,
-        username,
-        password
-      }
-      await queue.sendMessage(importQueueName, request);
-    });
-  }
-
-  await context.browser.close();
-  logInfo("All done!");
 }
 
 export { fetchCatalog, type CatalogArgs };

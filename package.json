@@ -31,6 +31,7 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
+    "@azure/cosmos": "^4.1.1",
     "@azure/identity": "^4.4.1",
     "@azure/storage-blob": "^12.24.0",
     "@azure/storage-queue": "^12.23.0",

@@ -69,7 +69,6 @@ async function deleteFolder(folderName: string): Promise<void> {
     for await (const blob of blobs) {
       await client.getBlockBlobClient(blob.name).delete();
     }
-    logWarning(`Folder "${folderName}" deleted successfully from blob storage`);
   } catch (error) {
     logError(`Error deleting folder "${folderName}" from blob storage: ${error}`);
   }
@@ -99,7 +98,7 @@ async function uploadStream(readableStream: Readable, blobName: string): Promise
     const blockBlobClient = client.getBlockBlobClient(blobName);
 
     await blockBlobClient.uploadStream(readableStream);
-    logInfo(`File "${blobName}" uploaded successfully to blob storage`);
+    logDebug(`File "${blobName}" uploaded successfully to blob storage`);
     return blobName;
   } catch (error) {
     logError(`Error uploading stream to blob storage: ${error}`);
@@ -120,13 +119,64 @@ async function checkFolderExists(folderName: string): Promise<boolean> {
   }
 }
 
+async function renameFile(oldName: string, newName: string) {
+  const client = await getContainerClient();
+  try {
+    const source = client.getBlobClient(oldName);
+    const target = client.getBlobClient(newName);
+
+    const copyPoller = await target.beginCopyFromURL(source.url);
+    await copyPoller.pollUntilDone();
+    await source.delete();
+
+    logInfo(`File "${oldName}" renamed to "${newName}" successfully in blob storage`);
+  } catch (error) {
+    logError(`Error renaming file "${oldName}" to "${newName}" in blob storage: ${error}`);
+    throw error;
+  }
+}
+
+async function listFiles(folderName: string): Promise<string[]> {
+  const client = await getContainerClient();
+  const blobs = client.listBlobsFlat({ prefix: folderName });
+  const fileNames: string[] = [];
+  for await (const blob of blobs) {
+    fileNames.push(blob.name);
+  }
+  return fileNames;
+}
+
+async function hasFolder(folderName: string): Promise<boolean> {
+  const client = await getContainerClient();
+  try {
+    const blobs = client.listBlobsFlat({ prefix: folderName });
+    for await (const _ of blobs) {
+      return true;
+    }
+    return false;
+  } catch (error) {
+    logError(`Error checking if folder "${folderName}" exists in blob storage: ${error}`);
+    throw error;
+  }
+}
+
+async function hasBlob(blobName: string): Promise<boolean> {
+  const client = await getContainerClient();
+  const blockBlobClient = client.getBlockBlobClient(blobName);
+  return await blockBlobClient.exists();
+}
+
 const blob = {
   checkExists,
+  listFiles,
   uploadFile,
   deleteFile,
   uploadStream,
   deleteFolder,
-  checkFolderExists, // Add the new function to the exported object
+  checkFolderExists,
+  renameFile,
+  hasFolder,
+  hasBlob,
 };
 
 export default blob;

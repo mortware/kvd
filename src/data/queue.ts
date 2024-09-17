@@ -1,8 +1,9 @@
-import { QueueServiceClient, QueueClient } from '@azure/storage-queue';
+import { QueueServiceClient, QueueClient, DequeuedMessageItem } from '@azure/storage-queue';
 import { logError, logInfo, logDebug, logWarning } from '../lib/logger';
 import { DefaultAzureCredential } from '@azure/identity';
 import { encodeBase64ToJson } from '../lib/utils';
 import KvdConfiguration from '../config';
+import { ImportRequest } from '../lib/models';
 
 const queueStorageUrl = KvdConfiguration.azure.queue.url;
 const defaultAzureCredential = new DefaultAzureCredential();
@@ -13,6 +14,18 @@ if (!queueStorageUrl) {
 
 const queueServiceClient = new QueueServiceClient(queueStorageUrl, defaultAzureCredential);
 
+// Fetch the next message from the queue
+async function getImportRequest(): Promise<{ item: ImportRequest, messageId: string, popReceipt: string } | null> {
+  const client = await getQueueClient('import');
+  const response = await client.receiveMessages({ numberOfMessages: 1 });
+  const message = response.receivedMessageItems[0];
+  if (message) {
+    const importRequest: ImportRequest = JSON.parse(Buffer.from(message.messageText, 'base64').toString('utf-8'));
+    return { item: importRequest, messageId: message.messageId, popReceipt: message.popReceipt };
+  }
+  return null;
+}
+
 async function getQueueClient(queueName: string): Promise<QueueClient> {
   const client = queueServiceClient.getQueueClient(queueName);
   await client.createIfNotExists();
@@ -20,7 +33,17 @@ async function getQueueClient(queueName: string): Promise<QueueClient> {
   return client;
 }
 
-async function sendMessage(queueName: string, request: any): Promise<void> {
+async function deleteMessage(queueName: string, messageId: string, popReceipt: string): Promise<void> {
+  const client = await getQueueClient(queueName);
+  const response = await client.deleteMessage(messageId, popReceipt);
+  if (response.errorCode) {
+    logError('Failed to delete message from queue', queueName, response.errorCode);
+  } else {
+    logInfo(`Deleted message from queue: ${queueName}`);
+  }
+}
+
+async function sendMessage(queueName: string, request: ImportRequest): Promise<void> {
   const message = JSON.stringify(request);
 
   try {
@@ -76,7 +99,10 @@ async function peekMessages(queueName: string): Promise<any[]> {
     }
 
     try {
-      return encodeBase64ToJson(msg.messageText);
+      return {
+        messageId: msg.messageId,
+        messageText: encodeBase64ToJson(msg.messageText)
+      };
     } catch (error) {
       logWarning(`Failed to decode message ${msg.messageId}: ${(error as Error).message}`);
       return {
@@ -91,7 +117,9 @@ const queue = {
   sendMessage,
   sendBatchMessages,
   clearQueue,
-  peekMessages
+  peekMessages,
+  getImportRequest,
+  deleteMessage
 };
 
 export default queue;
