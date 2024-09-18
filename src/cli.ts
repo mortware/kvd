@@ -8,14 +8,18 @@ import { logError } from './lib/logger.js';
 import { catalogCommand } from './commands/catalog.js';
 import { importCommand } from './commands/import.js';
 import { migrateCommand } from './commands/migrate.js';
-import cosmos from './data/cosmos.js';
+import { scanCommand } from './commands/scan.js';
+import { accountCommand } from './commands/account.js';
+import db from './data/db.js';
 
 yargs(hideBin(process.argv))
   .scriptName("kvd")
   .usage("Usage: $0 <command> [options]")
-  .command(catalogCommand) // Catalogs a users account and adds all the tracks their tracks to the database. No files downloaded yet.
-  .command(importCommand) // Processes the import queue
-  .command(migrateCommand) // Migrates from SQL to Cosmos
+  .command(catalogCommand)
+  .command(importCommand)
+  .command(migrateCommand)
+  .command(scanCommand)
+  .command(accountCommand)  // Add this line
   .command("$0", "Default command", () => { }, (argv) => {
     yargs.showHelp();
   })
@@ -24,7 +28,7 @@ yargs(hideBin(process.argv))
 
 function handleExit() {
   console.log("Exiting...");
-  cosmos.close().then(() => {
+  db.close().then(() => {
     process.exit(0);
   }).catch((error) => {
     logError(`Error closing database connection: ${error}`);

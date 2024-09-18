@@ -8,9 +8,8 @@
       "url": "https://mortware.blob.core.windows.net",
       "container": "tracks"
     },
-    "sql": {
-      "server": "mortware.database.windows.net",
-      "database": "mortware"
+    "cosmos": {
+      "url": "https://mortware.documents.azure.com:443/"
     }
   },
   "headless": true,

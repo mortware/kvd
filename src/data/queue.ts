@@ -3,7 +3,7 @@ import { logError, logInfo, logDebug, logWarning } from '../lib/logger';
 import { DefaultAzureCredential } from '@azure/identity';
 import { encodeBase64ToJson } from '../lib/utils';
 import KvdConfiguration from '../config';
-import { ImportRequest } from '../lib/models';
+import { ImportRequest } from '../types';
 
 const queueStorageUrl = KvdConfiguration.azure.queue.url;
 const defaultAzureCredential = new DefaultAzureCredential();
@@ -17,7 +17,7 @@ const queueServiceClient = new QueueServiceClient(queueStorageUrl, defaultAzureC
 // Fetch the next message from the queue
 async function getImportRequest(): Promise<{ item: ImportRequest, messageId: string, popReceipt: string } | null> {
   const client = await getQueueClient('import');
-  const response = await client.receiveMessages({ numberOfMessages: 1 });
+  const response = await client.receiveMessages({ numberOfMessages: 1, visibilityTimeout: 10 * 60 });
   const message = response.receivedMessageItems[0];
   if (message) {
     const importRequest: ImportRequest = JSON.parse(Buffer.from(message.messageText, 'base64').toString('utf-8'));

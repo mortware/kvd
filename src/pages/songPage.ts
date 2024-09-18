@@ -1,8 +1,6 @@
 import { Page } from "playwright";
 import { Readable } from "stream";
 import { logDebug, logError, logWarning } from "../lib/logger";
-import { SongInfo } from "../lib/models.js";
-import { sanitise, slugify } from "../lib/utils.js";
 import path from "path";
 import { KaraokeVersionConfig } from "../consts";
 
@@ -11,7 +9,7 @@ export default function songPage(page: Page) {
   const pitchResetLink = page.locator("#pitch-link");
   const keyDownButton = page.locator('button.btn--pitch:nth-of-type(1)'); // First button is "Key down"
   const keyUpButton = page.locator('button.btn--pitch:nth-of-type(2)');   // Second button is "Key up"
-  const stemContainers = page.locator(".mixer__inner > .track");
+  const presetsContainer = page.locator(".preset-container");
 
   async function navigate(relativeUrl: string): Promise<string> {
     const url = path.join(KaraokeVersionConfig.baseUrl, 'custombackingtrack', relativeUrl);
@@ -64,183 +62,6 @@ export default function songPage(page: Page) {
       return requiredReset;
     } catch (error) {
       logError('resetSongKey', error);
-      throw error;
-    }
-  }
-
-  async function getSongInfo(): Promise<SongInfo> {
-    try {
-      const titleElement = await page.$("#navbar li:last-child");
-      const titleText = await titleElement?.innerText() ?? "Unknown Title";
-
-      let artistElement = await page.$("#navbar li:nth-last-child(2)");
-      let artistText = await artistElement?.innerText() ?? "Unknown Artist";
-
-      const title = sanitise(titleText);
-      const artist = sanitise(artistText);
-
-      const slug = slugify(`${artist}-${title}`);
-
-      let tempo = await getTempo();
-      const songInfo = {
-        artist,
-        title,
-        ...tempo,
-        slug,
-        duration: await getDuration(),
-        key: await getKey(),
-        stems: await getStems(),
-        mixes: await getMixes(),
-        sourceId: await getSourceId(), // Add this line
-      };
-      logDebug(`Song info: ${JSON.stringify(songInfo, null, 2)}`);
-      return songInfo;
-    } catch (error) {
-      logError('getSongInfo', error);
-      throw error;
-    }
-  };
-
-  async function getSourceId(): Promise<string> {
-    try {
-      const titleElement = page.locator("h1.song-details__title");
-      const sourceId = await titleElement.getAttribute("data-prodsongid") || "";
-      logDebug(`Source ID: ${sourceId}`);
-      return sourceId;
-    } catch (error) {
-      logError('getSourceId', error);
-      throw error;
-    }
-  }
-
-  async function getStems(): Promise<{ index: number; name: string; slug: string; color: string; order: number; }[]> {
-    try {
-      const stemElements = await stemContainers.all();
-
-      const stems = [];
-      for (let [index, stemElement] of stemElements.entries()) {
-        const caption = await stemElement.locator(".track__caption");
-        let name = await caption?.innerText();
-        name = sanitise(name?.trim() ?? "Unknown");
-        let slug = slugify(name);
-
-        const color = await stemElement.evaluate((el) => {
-          const style = el.getAttribute('style');
-          const rgbMatch = style?.match(/color:\s*rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-
-          if (rgbMatch) {
-            const r = parseInt(rgbMatch[1] ?? "255", 10);
-            const g = parseInt(rgbMatch[2] ?? "255", 10);
-            const b = parseInt(rgbMatch[3] ?? "255", 10);
-
-            const hex = ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-            return `#${hex}`;
-          }
-          return '#000000'
-        });
-
-        stems.push({
-          index,
-          name,
-          slug,
-          color,
-          order: index,
-        });
-      }
-      logDebug(`Found ${stems.length} stems`);
-      return stems;
-    } catch (error) {
-      logError('getStems', error);
-      throw error;
-    }
-  };
-
-  async function getMixes(): Promise<{ id: string; name: string; slug: string; }[]> {
-    try {
-
-      const mixes = [];
-      mixes.push({
-        id: "",
-        name: "Full Mix",
-        slug: slugify("Full Mix"),
-      });
-
-      const presetElements = await page.$$(".preset-container > .preset");
-
-      for (let [_, presetElement] of presetElements.entries()) {
-        const name = await presetElement.innerText();
-        const slug = slugify('play along ' + name);
-        const id = await presetElement.evaluate((el) => el.getAttribute("data-preset-id"))!;
-
-        mixes.push({
-          id: id,
-          name,
-          slug,
-        });
-      }
-      logDebug(`Found ${mixes.length} mixes`);
-      return mixes;
-    } catch (error) {
-      logError('getMixes', error);
-      throw error;
-    }
-  }
-
-  async function getTempo(): Promise<{ tempo: number, tempoVariable: boolean }> {
-    try {
-
-      let tempoElement = await page.locator("#audio-infos p", { hasText: "Tempo:" }).innerText();
-
-      const tempo = parseFloat(tempoElement.replace(/[^0-9.]/g, ""));
-      const tempoVariable = tempoElement.includes("variable");
-
-      logDebug(`Tempo: ${tempo}, Tempo Variable: ${tempoVariable}`);
-      return {
-        tempo,
-        tempoVariable,
-      };
-
-    } catch (error) {
-      logError('getTempo', error);
-      throw error;
-    }
-  }
-
-  async function getDuration(): Promise<string> {
-    try {
-      const durationText = await page.locator("#audio-infos p", { hasText: "Duration:" }).innerText();
-      const regex = /(\d{2}:\d{2})/;
-      const match = durationText.match(regex);
-
-      let duration = "Unknown";
-      if (match) {
-        duration = match[0];
-      }
-      logDebug(`Duration: ${duration}`);
-      return duration;
-    } catch (error) {
-      logError('getDuration', error);
-      throw error;
-    }
-  };
-
-  async function getKey(): Promise<string> {
-    try {
-      const keyText = await page.locator("#audio-infos p", { hasText: "key" }).innerText();
-      const regex = /([A-G][#♯b♭]?(m|M)?)/;
-
-      const match = keyText.match(regex);
-
-      let key = "Unknown";
-      if (match) {
-        key = match[0]
-          .replace('♭', 'b')  // Replace special flat with regular 'b'
-          .replace('♯', '#'); // Replace special sharp with regular '#'
-      }
-      logDebug(`Key: ${key}`);
-      return key;
-    } catch (error) {
-      logError('getKey', error);
       throw error;
     }
   }
@@ -298,23 +119,29 @@ export default function songPage(page: Page) {
     }
   }
 
-  async function getMixStream(id: string | undefined): Promise<Readable> {
+  async function getMixStream(name: string | undefined): Promise<Readable> {
     try {
-      if (!id) {
+      if (!name) {
         logDebug("Downloading full mix");
         await resetMixer();
       } else {
-        logDebug(`Downloading preset mix '${id}'`);
-        const presetElement = await page.$(`.preset-container > .preset[data-preset-id='${id}']`);
+
+        // Find the preset button from the name
+        logDebug(`Downloading preset mix '${name}'`);
+
+        const presetElement = await presetsContainer.locator('.preset')
+          .filter({ hasText: name })
+          .first()
+
         if (presetElement == null) {
-          const error = `Preset mix '${id}' not found`;
+          const error = `Preset mix '${name}' not found`;
           logError(error);
           throw Error(error);
         }
         await presetElement.click();
       }
       const stream = await getDownloadStream();
-      logDebug(`Mix '${id}' stream fetched`);
+      logDebug(`Mix '${name}' stream fetched`);
       return stream;
     } catch (error) {
       logError('getMixStream', error);
@@ -343,9 +170,7 @@ export default function songPage(page: Page) {
     }
   }
 
-
-
-  return { navigate, getSongInfo, getStemStream, getMixStream, resetSongKey };
+  return { navigate, getStemStream, getMixStream, resetSongKey };
 }
 
 

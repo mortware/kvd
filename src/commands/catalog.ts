@@ -3,9 +3,8 @@ import { CatalogArgs, fetchCatalog } from '../actions';
 import { logDebug, logError, logInfo } from '../lib/logger';
 import automation from '../lib/automation';
 import songPagePublic from '../pages/songPagePublic';
-import cosmos from '../data/cosmos';
-import { v4 as uuidV4 } from 'uuid';
-import { Track } from '../lib/models';
+import db from '../data/db';
+import { Track } from '../types';
 import blob from '../data/blob';
 import queue from '../data/queue';
 import path from 'path';
@@ -24,44 +23,50 @@ export const catalogCommand: CommandModule<{}, CatalogArgs> = {
   },
   handler: async (args) => {
     try {
-      const items = await fetchCatalog({ ...args });
+      const tracks = await fetchCatalog({ ...args });
       await automation.close();
 
       const context = await automation.getContext();
       const page = songPagePublic(context.page);
 
-      for (const baseInfo of items) {
+      const processedTracks: Track[] = [];
+      for (const basicTrack of tracks) {
 
-        const track = await cosmos.getTrack(baseInfo.slug);
+        if (!basicTrack.slug || !basicTrack.source?.url) {
+          throw new Error(`Track ${basicTrack.title} by ${basicTrack.artist} has no slug or url`);
+        }
+
+        const track = await db.tracks.find(basicTrack.slug);
         const now = new Date();
         const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
-        if (track && track.updated && new Date(track.updated) > today) {
-          logInfo(`Skipping ${baseInfo.slug} because it was updated today`);
-          continue;
-        }
+        // if (track && track.updated && new Date(track.updated) > today) {
+        //   logDebug(`Skipping ${basicTrack.slug} because it was updated today`);
+        //   processedTracks.push(track);
+        //   continue;
+        // }
 
-        await page.navigate(baseInfo.url);
+        await page.navigate(basicTrack.source.url);
         const metadata = await page.getMetadata();
 
         if (!track) {
-          logDebug(`Track '${baseInfo.slug}' not found. Creating...`);
+          logDebug(`Track '${basicTrack.slug}' not found. Creating...`);
+
           const newTrack = {
-            created: new Date(),
-            title: baseInfo.title,
-            artist: baseInfo.artist,
-            slug: baseInfo.slug,
+            ...basicTrack,
+            ...metadata,
             source: {
-              url: baseInfo.url,
-              id: baseInfo.sourceId,
+              ...basicTrack.source,
               users: [args.username],
             },
-            ...metadata,
+            created: new Date(),
           } as Track;
-          await cosmos.create(newTrack);
-          await verifyTrack(newTrack);
+          await db.tracks.create(newTrack);
+          logInfo(`CREATED track '${newTrack.slug}'`);
+          processedTracks.push(newTrack);
+
         } else {
-          logDebug(`Track '${track.slug}' found. Id = '${track.id}'. Updating...`);
+
           delete (track as any).mix;
           const updatedTrack = {
             ...track,
@@ -72,22 +77,30 @@ export const catalogCommand: CommandModule<{}, CatalogArgs> = {
             },
             updated: new Date(),
           } as Track;
-          await cosmos.update(track.id, track.slug, updatedTrack);
-          await verifyTrack(updatedTrack);
+          await db.tracks.update(track.id, track.slug, updatedTrack);
+          logInfo(`UPDATED track '${track.slug}'`);
+          processedTracks.push(updatedTrack);
         }
 
       }
+
+      // Verify all the tracks we just processed
+      for (const track of processedTracks) {
+        await verifyTrack(track);
+      }
+
+
     } catch (error) {
       logError('Error cataloging tracks', error);
     } finally {
-      await cosmos.close();
+      await db.close();
       await automation.close();
     }
   }
 }
 
 async function verifyTrack(track: Track) {
-
+  logDebug(`Verifying track ${track.slug}`);
   // Check if the track has a folder
   const hasFolder = await blob.hasFolder(track.slug);
   if (!hasFolder) {
@@ -95,8 +108,7 @@ async function verifyTrack(track: Track) {
 
     await queue.sendMessage('import', {
       import: 'all',
-      url: track.source.url,
-      users: track.source.users,
+      slug: track.slug,
     });
     return; // Don't check the rest of the blobs if we are importing all
   }
@@ -109,8 +121,7 @@ async function verifyTrack(track: Track) {
 
       await queue.sendMessage('import', {
         import: 'full-mix',
-        url: track.source.url,
-        users: track.source.users,
+        slug: track.slug,
       });
     }
   }
@@ -122,8 +133,7 @@ async function verifyTrack(track: Track) {
 
       await queue.sendMessage('import', {
         import: 'mixes',
-        url: track.source.url,
-        users: track.source.users,
+        slug: track.slug,
       });
       break;
     }
@@ -136,8 +146,7 @@ async function verifyTrack(track: Track) {
 
       await queue.sendMessage('import', {
         import: 'stems',
-        url: track.source.url,
-        users: track.source.users,
+        slug: track.slug,
       });
       break;
     }

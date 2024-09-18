@@ -65,7 +65,8 @@ async function uploadFile(filePath: string, trackSlug: string, slug: string): Pr
 async function deleteFolder(folderName: string): Promise<void> {
   const client = await getContainerClient();
   try {
-    const blobs = client.listBlobsFlat({ prefix: folderName });
+    const normalizedFolderName = folderName.endsWith('/') ? folderName : `${folderName}/`;
+    const blobs = client.listBlobsFlat({ prefix: normalizedFolderName });
     for await (const blob of blobs) {
       await client.getBlockBlobClient(blob.name).delete();
     }
@@ -109,10 +110,14 @@ async function uploadStream(readableStream: Readable, blobName: string): Promise
 async function checkFolderExists(folderName: string): Promise<boolean> {
   const client = await getContainerClient();
   try {
-    const blobs = client.listBlobsFlat({ prefix: folderName });
-    const iterator = blobs.byPage({ maxPageSize: 1 });
-    const firstPage = await iterator.next();
-    return !firstPage.done;
+    const normalizedFolderName = folderName.endsWith('/') ? folderName : `${folderName}/`;
+    const blobs = client.listBlobsFlat({ prefix: normalizedFolderName });
+
+    for await (const blob of blobs) {
+      return true;
+    }
+    return false;
+
   } catch (error) {
     logError(`Error checking folder "${folderName}" existence in blob storage: ${error}`);
     throw error;
@@ -166,6 +171,14 @@ async function hasBlob(blobName: string): Promise<boolean> {
   return await blockBlobClient.exists();
 }
 
+async function* listAllBlobs(): AsyncGenerator<string, void, unknown> {
+  const client = await getContainerClient();
+  const blobs = client.listBlobsFlat();
+  for await (const blob of blobs) {
+    yield blob.name;
+  }
+}
+
 const blob = {
   checkExists,
   listFiles,
@@ -177,6 +190,7 @@ const blob = {
   renameFile,
   hasFolder,
   hasBlob,
+  listAllBlobs, // Add this new function to the exported object
 };
 
 export default blob;

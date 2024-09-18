@@ -2,9 +2,9 @@ import { CommandModule } from 'yargs';
 import { logError, logInfo } from '../lib/logger';
 import automation from '../lib/automation';
 import songPage from '../pages/songPage';
-import cosmos from '../data/cosmos';
+import db from '../data/db';
 import queue from '../data/queue';
-import { ImportRequest } from '../lib/models';
+import { ImportRequest } from '../types';
 import path from 'path';
 import blob from '../data/blob';
 
@@ -35,7 +35,6 @@ export const importCommand: CommandModule = {
       logError("Error importing track", error);
     } finally {
       await automation.close();
-      await cosmos.close();
     }
   }
 };
@@ -43,23 +42,33 @@ export const importCommand: CommandModule = {
 async function processMessage(message: ImportRequest) {
   logInfo(`Importing ${message.import}: ${JSON.stringify(message)}`);
 
-  if (!message.users || message.users.length === 0 || !message.users[0]) {
-    throw new Error('No users found in the request');
+  const track = await db.tracks.find(message.slug);
+  if (!track) {
+    throw new Error(`Track not found: ${message.slug}`);
   }
-  const username: string = message.users[0];
-  const account = await cosmos.getAccount(username);
+
+  if (!track.source.users || track.source.users.length === 0) {
+    throw new Error(`Track has no source users: ${message.slug}`);
+  }
+
+  const account = await db.accounts.find(track.source.users[0] as string);
+  if (!account) {
+    throw new Error(`Account not found: ${track.source.users[0]}`);
+  }
+
   const context = await automation.getContext(account.username, account.password);
   const page = songPage(context.page);
-  await page.navigate(message.url);
+  await page.navigate(track.source.url);
 
-  const songInfo = await page.getSongInfo();
-
-  async function importStems(stems: { index: number, slug: string }[] | undefined) {
+  async function importStems(stems: { index: number, slug: string }[]) {
     if (!stems) {
       throw new Error('No stems found on the song page');
     }
+    if (!track) {
+      throw new Error(`Track not found: ${message.slug}`);
+    }
     for (const stem of stems) {
-      const blobName = path.join(songInfo.slug, `${stem.slug}.mp3`);
+      const blobName = path.join(track.slug, `${stem.slug}.mp3`);
       const exists = await blob.checkExists(blobName);
       if (exists) {
         logInfo(`Skipping import of '${blobName}' because it already exists`);
@@ -72,18 +81,18 @@ async function processMessage(message: ImportRequest) {
     }
   };
 
-  async function importMixes(mixes: { id: string | undefined, slug: string }[] | undefined) {
-    if (!mixes) {
-      throw new Error('No mixes found on the song page');
+  async function importMixes(mixes: { name: string | undefined, slug: string }[]) {
+    if (!track) {
+      throw new Error(`Track not found: ${message.slug}`);
     }
     for (const mix of mixes) {
-      const blobName = path.join(songInfo.slug, `${mix.slug}.mp3`);
+      const blobName = path.join(track.slug, `${mix.slug}.mp3`);
       const exists = await blob.checkExists(blobName);
       if (exists) {
         logInfo(`Skipping import of '${blobName}' because it already exists`);
         continue;
       } else {
-        const stream = await page.getMixStream(mix.id);
+        const stream = await page.getMixStream(mix.name);
         await blob.uploadStream(stream, blobName);
         logInfo(`Imported mix '${blobName}'`);
       }
@@ -92,18 +101,18 @@ async function processMessage(message: ImportRequest) {
 
   switch (message.import) {
     case 'all':
-      await importMixes([{ id: undefined, slug: 'full-mix' }]);
-      await importStems(songInfo.stems);
-      await importMixes(songInfo.mixes);
+      await importMixes([{ name: undefined, slug: 'full-mix' }]);
+      await importStems(track.stems!.map(stem => ({ index: stem.order, slug: stem.slug })));
+      await importMixes(track.mixes!.map(mix => ({ name: mix.name, slug: mix.slug })));
       break;
     case 'mixes':
-      await importMixes(songInfo.mixes);
+      await importMixes(track.mixes!.map(mix => ({ name: mix.name, slug: mix.slug })));
       break;
     case 'stems':
-      await importStems(songInfo.stems);
+      await importStems(track.stems!.map(stem => ({ index: stem.order, slug: stem.slug })));
       break;
     case 'full-mix':
-      await importMixes([{ id: undefined, slug: 'full-mix' }]);
+      await importMixes([{ name: undefined, slug: 'full-mix' }]);
       break;
     default:
       throw new Error(`Invalid import type: ${message.import}`);

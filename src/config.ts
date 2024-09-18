@@ -21,11 +21,9 @@ interface KvdConfig {
             /** Name of the catalog queue in Azure Queue Storage */
             catalog?: string;
         };
-        sql: {
-            /** Azure SQL Server address */
-            server: string;
-            /** Name of the database in Azure SQL */
-            database: string;
+        cosmos: {
+            /** Azure CosmosDB endpoint URL */
+            url: string;
         };
     };
     /** Delay in milliseconds. Helps to slow down the automation process. */
@@ -39,7 +37,7 @@ let fileConfig: KvdConfig = {
     azure: {
         blob: { url: '', container: '' },
         queue: { url: '' },
-        sql: { server: '', database: '' }
+        cosmos: { url: '' }
     },
     headless: true,
 };
@@ -70,11 +68,9 @@ const KvdConfiguration: KvdConfig = {
             /** Azure Queue catalog name */
             catalog: fileConfig.azure?.queue?.catalog,
         },
-        sql: {
-            /** Azure SQL Server address */
-            server: fileConfig.azure?.sql?.server || '',
-            /** Azure SQL Database name */
-            database: fileConfig.azure?.sql?.database || '',
+        cosmos: {
+            /** Cosmos endpoint URL */
+            url: fileConfig.azure?.cosmos?.url || ''
         },
     },
     /** Process delay in milliseconds */
@@ -95,9 +91,8 @@ const configSchema = z.object({
             import: z.string().optional(),
             catalog: z.string().optional(),
         }),
-        sql: z.object({
-            server: z.string().min(1, "Azure SQL Server address is required"),
-            database: z.string().min(1, "Azure SQL Database name is required"),
+        cosmos: z.object({
+            url: z.string().min(1, "Azure CosmosDB endpoint URL is required"),
         }),
     }),
     processDelay: z.number().nonnegative().optional(),

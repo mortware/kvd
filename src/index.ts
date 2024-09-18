@@ -2,7 +2,6 @@ import KvdConfiguration from "./config";
 import { logError } from "./lib/logger";
 
 export * from "./actions";
-export * from "./lib/models.js";
 export * from "./lib/utils.js";
 
 let config: Readonly<typeof KvdConfiguration>;

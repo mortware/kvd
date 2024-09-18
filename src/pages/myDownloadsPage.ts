@@ -4,6 +4,7 @@ import playwright from "playwright";
 import { KaraokeVersionConfig } from "../consts";
 import path from "path";
 import { slugify } from "../lib/utils";
+import { Track } from "../types";
 
 export type SongItem = {
   sourceId: string;
@@ -24,9 +25,9 @@ export default function myDownloadPage(page: Page) {
     await page.goto(`${url}`);
   }
 
-  async function getTracks(): Promise<SongItem[]> {
+  async function getTracks(): Promise<Partial<Track>[]> {
     logDebug("Fetching tracks");
-    const tracks: SongItem[] = [];
+    const tracks: Partial<Track>[] = [];
 
     let nextUrl: string | null = "";
 
@@ -40,8 +41,11 @@ export default function myDownloadPage(page: Page) {
 
         if (songUrl?.includes("custombackingtrack")) { // Avoids tracks that aren't custombackingtracks
           tracks.push({
-            sourceId: sourceId ?? "",
-            url: songUrl.replace("/custombackingtrack/", "").trim().trim(),
+            source: {
+              id: sourceId,
+              url: songUrl.replace("/custombackingtrack/", "").trim().trim(),
+              users: [],
+            },
             title: songTitle.trim(),
             artist: songArtist.trim(),
             slug: slugify(songArtist, songTitle),

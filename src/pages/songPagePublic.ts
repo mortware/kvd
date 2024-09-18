@@ -2,8 +2,8 @@ import { Page } from "playwright";
 import { logDebug, logError } from "../lib/logger";
 import path from "path";
 import { KaraokeVersionConfig } from "../consts";
-import { Mix, Stem, Track } from "../lib/models";
 import { sanitise, slugify } from "../lib/utils";
+import { Mix, Stem, Track } from "../types";
 
 export default function songPagePublic(page: Page) {
   const stemContainers = page.locator(".mixer__inner > .track");
@@ -137,7 +137,7 @@ export default function songPagePublic(page: Page) {
       logError('getDuration', error);
       throw error;
     }
-  };
+  }
 
   async function getKey(): Promise<string> {
     try {

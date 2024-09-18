@@ -1,9 +1,9 @@
 import { CommandModule } from 'yargs';
 import { logError, logInfo, logWarning } from '../lib/logger';
-import cosmos from '../data/cosmos';
-import { Track, TrackItem } from '../lib/models';
+import db from '../data/db';
 import blob from '../data/blob';
 import path from 'path';
+import { Track, TrackItem } from '../types';
 
 // Helper function to convert PascalCase to camelCase
 const toCamelCase = (str: string) => str.charAt(0).toLowerCase() + str.slice(1);
@@ -65,7 +65,7 @@ export const migrateCommand: CommandModule = {
       // }
       // console.log(track);
 
-      const tracks = await cosmos.getAllTracks();
+      const tracks = await db.tracks.list();
 
       let folderMissing: string[] = [];
       let mixMissing: string[] = [];
@@ -160,7 +160,7 @@ export const migrateCommand: CommandModule = {
       logError('Error updating tracks', error);
       process.exit(1);
     } finally {
-      await cosmos.close();
+      await db.close();
     }
   }
 }
