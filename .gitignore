@@ -23,6 +23,9 @@ out/
 .vscode/
 .idea/
 
+# Browser data (persistent sessions)
+.browser-data/
+
 # Miscellaneous
 .DS_Store
 Thumbs.db

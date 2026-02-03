@@ -1,8 +1,7 @@
 import { Page } from "playwright";
 import { logDebug, logError } from "../lib/logger";
-import path from "path";
 import { KaraokeVersionConfig } from "../consts";
-import { sanitise, slugify } from "../lib/utils";
+import { sanitise, slugify, urlJoin } from "../lib/utils";
 import { Mix, Stem, Track } from "../types";
 
 export default function songPagePublic(page: Page) {
@@ -11,7 +10,7 @@ export default function songPagePublic(page: Page) {
   const audioInfo = page.locator("#audio-infos");
 
   async function navigate(relativeUrl: string): Promise<string> {
-    const url = path.join(KaraokeVersionConfig.baseUrl, 'custombackingtrack', relativeUrl);
+    const url = urlJoin(KaraokeVersionConfig.baseUrl, 'custombackingtrack', relativeUrl);
     try {
       logDebug(`Navigating to ${url}`);
       await page.goto(url);

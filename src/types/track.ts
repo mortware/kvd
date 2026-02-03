@@ -1,3 +1,6 @@
+export type SyncStatus = 'pending' | 'synced' | 'missing' | 'error';
+export type TrackSyncStatus = 'pending' | 'partial' | 'complete' | 'error';
+
 export type Track = {
   id: string;
   artist: string;
@@ -16,6 +19,8 @@ export type Track = {
   songKey: string;
   created: Date;
   updated?: Date;
+  status?: TrackSyncStatus;
+  lastSync?: Date;
   fullMix?: Mix;
   stems?: Stem[];
   mixes?: Mix[];
@@ -24,9 +29,11 @@ export type Track = {
 export type Stem = {
   color: string;
   order: number;
+  status?: SyncStatus;
 } & TrackItem
 
 export type Mix = {
+  status?: SyncStatus;
 } & TrackItem
 
 export type TrackItem = {

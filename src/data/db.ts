@@ -23,6 +23,22 @@ const trackRepository = {
     }
   },
 
+  async listByUser(username: string): Promise<Track[]> {
+    const container = await getContainer('tracks');
+
+    try {
+      const query = `SELECT * FROM c WHERE ARRAY_CONTAINS(c.source.users, @username)`;
+      const { resources: tracks } = await container.items.query({
+        query,
+        parameters: [{ name: '@username', value: username }],
+      }).fetchAll();
+      return tracks as Track[];
+    } catch (error) {
+      logError(`Error retrieving tracks for user '${username}': ${error}`);
+      throw error;
+    }
+  },
+
   async create(track: Track) {
     const container = await getContainer('tracks');
 
@@ -87,6 +103,13 @@ const trackRepository = {
 }
 
 const accountRepository = {
+  async list(): Promise<Account[]> {
+    const container = await getContainer("accounts");
+    const query = `SELECT c.id, c.name, c.username, c.created FROM c`;
+    const { resources: accounts } = await container.items.query(query).fetchAll();
+    return accounts as Account[];
+  },
+
   async find(username: string): Promise<Account | null> {
     const container = await getContainer("accounts");
     const query = `SELECT TOP 1 * FROM c WHERE c.username = @username`;
@@ -105,6 +128,18 @@ const accountRepository = {
       return result.resource as Account;
     } catch (error) {
       logError(`Error creating account: ${error}`);
+      throw error;
+    }
+  },
+
+  async update(account: Account) {
+    try {
+      const container = await getContainer("accounts");
+      account.updated = new Date();
+      await container.item(account.id, account.username).replace(account);
+      logDebug(`Updated account: ${account.username}`);
+    } catch (error) {
+      logError(`Error updating account: ${error}`);
       throw error;
     }
   },

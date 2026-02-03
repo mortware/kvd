@@ -1,6 +1,18 @@
 const invalidFolderNameRegex = /[<>:"/\\|?*\x00-\x1F]/g;
 const emptySpacesRegex = /\s+/g;
 
+export function urlJoin(...parts: string[]): string {
+  return parts
+    .map((part, index) => {
+      if (index === 0) {
+        return part.replace(/\/+$/, '');
+      }
+      return part.replace(/^\/+/, '').replace(/\/+$/, '');
+    })
+    .filter(part => part.length > 0)
+    .join('/');
+}
+
 export function sanitise(value: string): string {
   return value
     .replace(invalidFolderNameRegex, '')

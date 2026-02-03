@@ -12,6 +12,6 @@
       "url": "https://mortware.documents.azure.com:443/"
     }
   },
-  "headless": true,
+  "headless": false,
   "processDelay": 0
 }

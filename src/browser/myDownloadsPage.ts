@@ -2,8 +2,7 @@ import { Locator, Page } from "playwright";
 import { logDebug, logError, logInfo } from "../lib/logger";
 import playwright from "playwright";
 import { KaraokeVersionConfig } from "../consts";
-import path from "path";
-import { slugify } from "../lib/utils";
+import { slugify, urlJoin } from "../lib/utils";
 import { Track } from "../types";
 
 export type SongItem = {
@@ -20,9 +19,9 @@ export default function myDownloadPage(page: Page) {
   const trackRows = page.locator("table.my-downloaded-files > tbody > tr");
 
   async function navigate() {
-    const url = path.join(KaraokeVersionConfig.baseUrl, "my/download.html");
+    const url = urlJoin(KaraokeVersionConfig.baseUrl, "my/download.html");
     logDebug(`Navigating to ${url}`);
-    await page.goto(`${url}`);
+    await page.goto(url);
   }
 
   async function getTracks(): Promise<Partial<Track>[]> {
@@ -58,7 +57,7 @@ export default function myDownloadPage(page: Page) {
       const nextBtn = await page.$("div.pagination > a.next");
       nextUrl = nextBtn ? await nextBtn.getAttribute("href") : null;
       if (nextUrl) {
-        const url = path.join(KaraokeVersionConfig.baseUrl, nextUrl);
+        const url = urlJoin(KaraokeVersionConfig.baseUrl, nextUrl);
         logDebug(`Navigating to ${url}`);
         await page.goto(url);
       }
