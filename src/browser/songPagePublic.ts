@@ -159,6 +159,27 @@ export default function songPagePublic(page: Page) {
     }
   }
 
+  async function getLyrics(): Promise<string | null> {
+    try {
+      const lyricsContainer = page.locator('.lyrics .js__lyrics');
+      const count = await lyricsContainer.count();
+      
+      if (count === 0) {
+        logDebug('No lyrics found on page');
+        return null;
+      }
+
+      const lyrics = await lyricsContainer.innerText();
+      const cleanedLyrics = lyrics.trim();
+      
+      logDebug(`Found lyrics: ${cleanedLyrics.length} characters`);
+      return cleanedLyrics || null;
+    } catch (error) {
+      logError('getLyrics', error);
+      return null;
+    }
+  }
+
   async function getMetadata(): Promise<Partial<Track>> {
     logDebug('Getting metadata...');
 
@@ -180,5 +201,5 @@ export default function songPagePublic(page: Page) {
       songKey
     };
   }
-  return { navigate, getMetadata };
+  return { navigate, getMetadata, getLyrics };
 }

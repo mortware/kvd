@@ -1,10 +1,10 @@
 {
   "name": "@mortware/kvd",
   "bin": {
-    "kvd-mcp": "dist/server/index.js"
+    "kvd": "dist/cli.js"
   },
   "version": "0.0.18",
-  "description": "KVD MCP Server for karaoke track management",
+  "description": "CLI for managing karaoke-version track catalog imports, assets, and downloads",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -13,12 +13,15 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w",
+    "help": "npm run build && node dist/cli.js help",
+    "download": "npm run build && node dist/cli.js download",
     "release": "npm version patch && npm run build && npm publish"
   },
   "keywords": [
-    "mcp",
+    "cli",
     "kvd",
-    "karaoke"
+    "karaoke",
+    "karaoke-version"
   ],
   "author": "mortware",
   "license": "ISC",
@@ -29,10 +32,10 @@
   },
   "dependencies": {
     "@azure/cosmos": "^4.1.1",
-    "@azure/identity": "^4.4.1",
+    "@azure/identity": "^4.13.1",
     "@azure/storage-blob": "^12.24.0",
     "@azure/storage-queue": "^12.23.0",
-    "@modelcontextprotocol/sdk": "^1.25.3",
+    "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "playwright": "^1.46.1",
     "uuid": "^10.0.0",

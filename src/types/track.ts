@@ -1,5 +1,5 @@
-export type SyncStatus = 'pending' | 'synced' | 'missing' | 'error';
-export type TrackSyncStatus = 'pending' | 'partial' | 'complete' | 'error';
+export type AssetImportStatus = 'pending' | 'imported' | 'missing' | 'error';
+export type TrackImportStatus = 'pending' | 'partial' | 'complete' | 'error';
 
 export type Track = {
   id: string;
@@ -17,10 +17,11 @@ export type Track = {
   };
   duration: string;
   songKey: string;
+  lyrics?: string;        // Plain text lyrics
   created: Date;
   updated?: Date;
-  status?: TrackSyncStatus;
-  lastSync?: Date;
+  status?: TrackImportStatus;
+  lastImport?: Date;
   fullMix?: Mix;
   stems?: Stem[];
   mixes?: Mix[];
@@ -29,11 +30,11 @@ export type Track = {
 export type Stem = {
   color: string;
   order: number;
-  status?: SyncStatus;
+  status?: AssetImportStatus;
 } & TrackItem
 
 export type Mix = {
-  status?: SyncStatus;
+  status?: AssetImportStatus;
 } & TrackItem
 
 export type TrackItem = {

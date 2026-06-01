@@ -1,4 +1,4 @@
-import { Page } from "playwright";
+import { Locator, Page } from "playwright";
 import { Readable } from "stream";
 import { logDebug, logError, logWarning } from "../lib/logger";
 import { urlJoin } from "../lib/utils";
@@ -105,10 +105,53 @@ export default function songPage(page: Page) {
     }
   };
 
+  async function checkAndEnable(locator: Locator): Promise<boolean> {
+    if (await locator.count() === 0) {
+      return false;
+    }
+
+    const checkbox = locator.first();
+    const inputType = await checkbox.getAttribute('type');
+    if (inputType !== 'checkbox') {
+      return false;
+    }
+
+    const isChecked = await checkbox.isChecked();
+    if (!isChecked) {
+      await checkbox.check({ force: true });
+      logDebug('Enabled count-in option for download');
+    }
+
+    return true;
+  }
+
+  async function ensureCountInEnabled() {
+    try {
+      const candidates: Locator[] = [
+        page.getByLabel(/count[\s-]?in/i),
+        page.locator('label:has-text("Count-in") input[type="checkbox"]'),
+        page.locator('label:has-text("Count in") input[type="checkbox"]'),
+        page.locator('input[type="checkbox"][name*="count" i]'),
+        page.locator('input[type="checkbox"][id*="count" i]'),
+      ];
+
+      for (const candidate of candidates) {
+        if (await checkAndEnable(candidate)) {
+          return;
+        }
+      }
+
+      logWarning('Could not find a count-in checkbox, so count-in cannot be explicitly enforced for this download.');
+    } catch (error) {
+      logWarning(`Failed to enforce count-in option: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
   async function getStemStream(index: number): Promise<Readable> {
     try {
       await resetMixer();
       await soloTrack(index);
+      await ensureCountInEnabled();
 
       const stream = await getDownloadStream();
       logDebug(`Stem '${index}' stream fetched`);
@@ -140,6 +183,7 @@ export default function songPage(page: Page) {
         }
         await presetElement.click();
       }
+      await ensureCountInEnabled();
       const stream = await getDownloadStream();
       logDebug(`Mix '${name}' stream fetched`);
       return stream;

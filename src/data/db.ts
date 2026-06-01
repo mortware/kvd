@@ -99,6 +99,104 @@ const trackRepository = {
       logError(`Error updating track: ${error}`);
       throw error;
     }
+  },
+
+  async query(filters: {
+    search?: string;
+    hasLyrics?: boolean;
+    status?: string;
+    key?: string;
+    tempoMin?: number;
+    tempoMax?: number;
+    username?: string;
+    sortBy?: 'artist' | 'title' | 'updated' | 'created';
+    sortDirection?: 'asc' | 'desc';
+    limit?: number;
+  }): Promise<Track[]> {
+    const container = await getContainer('tracks');
+
+    try {
+      const conditions: string[] = [];
+      const parameters: Array<{ name: string; value: any }> = [];
+
+      // Search in slug (already lowercased, contains artist-title)
+      if (filters.search) {
+        conditions.push('CONTAINS(c.slug, @search)');
+        parameters.push({ name: '@search', value: filters.search.toLowerCase() });
+      }
+
+      // Lyrics filter
+      if (filters.hasLyrics !== undefined) {
+        if (filters.hasLyrics) {
+          conditions.push('IS_DEFINED(c.lyrics)');
+        } else {
+          conditions.push('NOT IS_DEFINED(c.lyrics)');
+        }
+      }
+
+      // Status filter
+      if (filters.status) {
+        conditions.push('c.status = @status');
+        parameters.push({ name: '@status', value: filters.status });
+      }
+
+      // Key filter
+      if (filters.key) {
+        conditions.push('c.songKey = @key');
+        parameters.push({ name: '@key', value: filters.key });
+      }
+
+      // Tempo range filter
+      if (filters.tempoMin !== undefined) {
+        conditions.push('c.tempo.bpm >= @tempoMin');
+        parameters.push({ name: '@tempoMin', value: filters.tempoMin });
+      }
+      if (filters.tempoMax !== undefined) {
+        conditions.push('c.tempo.bpm <= @tempoMax');
+        parameters.push({ name: '@tempoMax', value: filters.tempoMax });
+      }
+
+      // User filter
+      if (filters.username) {
+        conditions.push('ARRAY_CONTAINS(c.source.users, @username)');
+        parameters.push({ name: '@username', value: filters.username });
+      }
+
+      // Build query
+      let query = 'SELECT * FROM c';
+      if (conditions.length > 0) {
+        query += ' WHERE ' + conditions.join(' AND ');
+      }
+
+      // Add sorting
+      if (filters.sortBy) {
+        const direction = filters.sortDirection?.toUpperCase() || 'ASC';
+        if (filters.sortBy === 'artist') {
+          query += ' ORDER BY c.artist ' + direction;
+        } else if (filters.sortBy === 'title') {
+          query += ' ORDER BY c.title ' + direction;
+        } else if (filters.sortBy === 'updated') {
+          query += ' ORDER BY c.updated ' + direction;
+        } else if (filters.sortBy === 'created') {
+          query += ' ORDER BY c.created ' + direction;
+        }
+      }
+
+      logDebug(`Query: ${query}`);
+      logDebug(`Parameters: ${JSON.stringify(parameters)}`);
+
+      const { resources: tracks } = await container.items.query({
+        query,
+        parameters,
+      }, {
+        maxItemCount: filters.limit || 50
+      }).fetchAll();
+
+      return tracks as Track[];
+    } catch (error) {
+      logError(`Error querying tracks: ${error}`);
+      throw error;
+    }
   }
 }
 

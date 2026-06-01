@@ -171,6 +171,25 @@ async function hasBlob(blobName: string): Promise<boolean> {
   return await blockBlobClient.exists();
 }
 
+async function downloadToFile(blobName: string, outputFilePath: string): Promise<void> {
+  const client = await getContainerClient();
+  const blockBlobClient = client.getBlockBlobClient(blobName);
+
+  try {
+    const exists = await blockBlobClient.exists();
+    if (!exists) {
+      throw new Error(`Blob not found: ${blobName}`);
+    }
+
+    await fs.mkdir(path.dirname(outputFilePath), { recursive: true });
+    await blockBlobClient.downloadToFile(outputFilePath);
+    logInfo(`Downloaded "${blobName}" to "${outputFilePath}"`);
+  } catch (error) {
+    logError(`Error downloading blob "${blobName}" to "${outputFilePath}": ${error}`);
+    throw error;
+  }
+}
+
 async function* listAllBlobs(): AsyncGenerator<string, void, unknown> {
   const client = await getContainerClient();
   const blobs = client.listBlobsFlat();
@@ -190,6 +209,7 @@ const blob = {
   renameFile,
   hasFolder,
   hasBlob,
+  downloadToFile,
   listAllBlobs, // Add this new function to the exported object
 };
 

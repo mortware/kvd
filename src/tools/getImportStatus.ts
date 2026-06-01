@@ -1,7 +1,11 @@
-import { TrackSyncStatus } from "../types";
-import db from "../data/db";
+import { TrackImportStatus } from '../types';
+import db from '../data/db';
 
-export type UserSyncStatus = {
+function isImportedAssetStatus(status: string | undefined): boolean {
+  return status === 'imported' || status === 'synced';
+}
+
+export type UserImportStatus = {
   username: string;
   totalTracks: number;
   complete: number;
@@ -13,16 +17,16 @@ export type UserSyncStatus = {
     slug: string;
     artist: string;
     title: string;
-    status: TrackSyncStatus;
+    status: TrackImportStatus;
     totalItems: number;
-    syncedItems: number;
+    importedItems: number;
   }[];
 };
 
-export async function getSyncStatus(username: string): Promise<UserSyncStatus> {
+export async function getImportStatus(username: string): Promise<UserImportStatus> {
   const tracks = await db.tracks.listByUser(username);
 
-  const result: UserSyncStatus = {
+  const result: UserImportStatus = {
     username,
     totalTracks: tracks.length,
     complete: 0,
@@ -35,12 +39,12 @@ export async function getSyncStatus(username: string): Promise<UserSyncStatus> {
 
   for (const track of tracks) {
     const status = track.status || 'pending';
-    
+
     const totalItems = 1 + (track.stems?.length || 0) + (track.mixes?.length || 0);
-    const syncedItems = 
-      (track.fullMix?.status === 'synced' ? 1 : 0) +
-      (track.stems?.filter(s => s.status === 'synced').length || 0) +
-      (track.mixes?.filter(m => m.status === 'synced').length || 0);
+    const importedItems =
+      (isImportedAssetStatus(track.fullMix?.status) ? 1 : 0) +
+      (track.stems?.filter((s) => isImportedAssetStatus(s.status)).length || 0) +
+      (track.mixes?.filter((m) => isImportedAssetStatus(m.status)).length || 0);
 
     result.tracks.push({
       slug: track.slug,
@@ -48,21 +52,21 @@ export async function getSyncStatus(username: string): Promise<UserSyncStatus> {
       title: track.title,
       status,
       totalItems,
-      syncedItems,
+      importedItems,
     });
 
     switch (status) {
       case 'complete':
-        result.complete++;
+        result.complete += 1;
         break;
       case 'partial':
-        result.partial++;
+        result.partial += 1;
         break;
       case 'error':
-        result.error++;
+        result.error += 1;
         break;
       default:
-        result.pending++;
+        result.pending += 1;
     }
   }
 

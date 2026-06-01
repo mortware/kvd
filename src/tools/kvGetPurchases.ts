@@ -3,20 +3,20 @@ import myDownloadsPage from "../browser/myDownloadsPage";
 import db from "../data/db";
 import { Track, CatalogCache } from "../types";
 
-type GetPurchasesArgs = {
+type KvGetPurchasesArgs = {
   username: string;
   skipCache?: boolean;
   maxCacheAge?: number; // in hours, default 24
 };
 
-type GetPurchasesResult = {
+type KvGetPurchasesResult = {
   tracks: Partial<Track>[];
   cached: boolean;
   cacheAgeHours?: number;
   fetchedAt: Date;
 };
 
-async function getPurchases({ username, skipCache = false, maxCacheAge = 24 }: GetPurchasesArgs): Promise<GetPurchasesResult> {
+async function kvGetPurchases({ username, skipCache = false, maxCacheAge = 24 }: KvGetPurchasesArgs): Promise<KvGetPurchasesResult> {
   try {
     const account = await db.accounts.find(username);
     if (!account) {
@@ -72,4 +72,4 @@ async function getPurchases({ username, skipCache = false, maxCacheAge = 24 }: G
   }
 }
 
-export { getPurchases, type GetPurchasesArgs, type GetPurchasesResult };
+export { kvGetPurchases, type KvGetPurchasesArgs, type KvGetPurchasesResult };

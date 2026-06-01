@@ -1,5 +1,6 @@
-import { getPurchases } from "./getPurchases";
+import { kvGetPurchases } from "./kvGetPurchases";
 import db from "../data/db";
+import { Track } from "../types";
 
 export type CatalogComparison = {
   inBoth: { sourceId: string; slug: string; artist: string; title: string }[];
@@ -7,10 +8,13 @@ export type CatalogComparison = {
   onlyInDatabase: { sourceId: string; slug: string; artist: string; title: string }[];
 };
 
-export async function compareCatalog(username: string): Promise<CatalogComparison> {
-  const result = await getPurchases({ username });
+export async function compareCatalog(
+  username: string,
+  options?: { skipCache?: boolean },
+): Promise<CatalogComparison> {
+  const result = await kvGetPurchases({ username, skipCache: options?.skipCache ?? false });
   const websiteTracks = result.tracks;
-  const websiteIds = new Set(websiteTracks.map(t => t.source?.id).filter(Boolean));
+  const websiteIds = new Set(websiteTracks.map((t: Partial<Track>) => t.source?.id).filter(Boolean));
 
   const dbTracks = await db.tracks.listByUser(username);
   const dbIds = new Set(dbTracks.map(t => t.source?.id).filter(Boolean));
@@ -22,7 +26,7 @@ export async function compareCatalog(username: string): Promise<CatalogCompariso
   for (const track of websiteTracks) {
     const sourceId = track.source?.id;
     if (!sourceId) continue;
-    
+
     if (dbIds.has(sourceId)) {
       inBoth.push({
         sourceId,
@@ -43,7 +47,7 @@ export async function compareCatalog(username: string): Promise<CatalogCompariso
   for (const track of dbTracks) {
     const sourceId = track.source?.id;
     if (!sourceId) continue;
-    
+
     if (!websiteIds.has(sourceId)) {
       onlyInDatabase.push({
         sourceId,
