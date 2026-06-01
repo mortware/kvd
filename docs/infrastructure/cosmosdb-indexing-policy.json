@@ -1,0 +1,50 @@
+{
+  "indexingMode": "consistent",
+  "automatic": true,
+  "includedPaths": [
+    {
+      "path": "/*"
+    }
+  ],
+  "excludedPaths": [
+    {
+      "path": "/lyrics/*"
+    },
+    {
+      "path": "/stems/*"
+    },
+    {
+      "path": "/mixes/*"
+    },
+    {
+      "path": "/fullMix/*"
+    },
+    {
+      "path": "/_etag/*"
+    },
+    {
+      "path": "/_rid/*"
+    },
+    {
+      "path": "/_self/*"
+    },
+    {
+      "path": "/_attachments/*"
+    },
+    {
+      "path": "/_ts/*"
+    }
+  ],
+  "compositeIndexes": [
+    [
+      {
+        "path": "/status",
+        "order": "ascending"
+      },
+      {
+        "path": "/updated",
+        "order": "descending"
+      }
+    ]
+  ]
+}
