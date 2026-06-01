@@ -70,8 +70,34 @@ Examples:
 ```bash
 kvd download --search "bruno mars" --username your-user --output ./downloads
 kvd download --slug bruno-mars-i-just-might
-kvd mix --slug bruno-mars-i-just-might --output ./downloads
+kvd mix --slug bruno-mars-i-just-might
 ```
+
+Interactive mix example:
+
+```bash
+kvd track mix --search "bruno"
+```
+
+What this does:
+
+- Finds matching tracks, then prompts you to choose one.
+- Shows all available stems for that track, then prompts you to select which stems to include in the backing mix.
+- Ensures selected stem MP3s and click MP3 are cached under `downloads/<track-slug>/`.
+- Writes final WAV outputs under `mixes/<track-slug>/`:
+  - `<track-slug>-backing.wav` (selected stems mixed)
+  - `<track-slug>-click.wav` (click track only)
+- By default, mutes the first bar in the backing WAV (count-in suppression).
+- Leaves the click WAV unmodified (no first-bar mute).
+- Validates that backing and click WAV durations match and reports pass/fail.
+
+Optional flag:
+
+```bash
+kvd track mix --search "bruno" --keep-count-in
+```
+
+Use `--keep-count-in` to keep the first-bar count-in audible in the backing WAV.
 
 ### Accounts and catalog
 

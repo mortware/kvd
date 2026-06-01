@@ -16,6 +16,7 @@ export type CliArgs = {
   outputDir: string;
   limit: number;
   slug?: string;
+  keepCountIn?: boolean;
 };
 
 export type FileManifestItem = {
@@ -50,6 +51,7 @@ export function toCliArgs(options: {
   slug?: string;
   output?: string;
   limit?: number;
+  keepCountIn?: boolean;
 }): CliArgs {
   const parsedLimit = options.limit ?? 25;
 
@@ -63,6 +65,7 @@ export function toCliArgs(options: {
     slug: options.slug,
     outputDir: path.resolve(process.cwd(), options.output ?? 'downloads'),
     limit: Math.min(parsedLimit, 100),
+    keepCountIn: options.keepCountIn ?? false,
   };
 }
 

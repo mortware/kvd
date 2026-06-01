@@ -26,6 +26,7 @@ out/
 # Browser data (persistent sessions)
 .browser-data/
 downloads/
+mixes/
 
 # Miscellaneous
 .DS_Store
