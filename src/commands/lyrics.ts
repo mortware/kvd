@@ -1,11 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 import { Command } from 'commander';
-import { kvGetLyrics, updateLyrics } from '../features';
+import { getLyrics, updateLyrics } from '../features';
+import { getKvLyricsSource } from '../integrations/kv/lyrics';
 import { printJson } from './shared';
 
 async function runLyricsGet(options: { slug: string }): Promise<void> {
-  const result = await kvGetLyrics({ slug: options.slug });
+  const result = await getLyrics({
+    slug: options.slug,
+    source: getKvLyricsSource(),
+  });
   printJson(result);
 }
 
