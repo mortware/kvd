@@ -5,7 +5,8 @@ import { spawn } from 'child_process';
 import { stdin as input, stdout as output } from 'process';
 import blob from '../data/blob';
 import db from '../data/db';
-import { ImportMode, listAccounts } from '../features';
+import { ImportMode } from '../features';
+import { listAccounts } from '../integrations/kv';
 import { Track, TrackImportStatus } from '../types';
 import { logInfo } from '../lib/logger';
 

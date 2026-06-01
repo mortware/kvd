@@ -6,7 +6,8 @@ This project follows a feature-first CLI architecture.
 
 - src/cli.ts: thin bootstrap (error handling, parse lifecycle, shutdown).
 - src/commands/: command registration modules and shared CLI utilities.
-- src/features/: Domain features with service modules and feature barrels.
+- src/features/: App domain services (tracks and lyrics only).
+- src/integrations/: External system integration modules (KV website/account/catalog).
 - src/data/: Infrastructure clients (CosmosDB and Blob).
 - src/browser/: Playwright page objects for karaoke-version flows.
 - src/lib/: Shared runtime utilities (logging, automation lifecycle, helpers).
@@ -21,10 +22,15 @@ Each feature is structured as:
 
 Current features:
 
-- accounts: account CRUD and listing.
-- catalog: purchase retrieval and catalog comparisons.
 - tracks: track queries, import orchestration, and import status refresh.
 - lyrics: lyrics fetch and persistence updates.
+
+Current integrations:
+
+- kv/accounts: KV credential/account operations.
+- kv/catalog: KV purchases and catalog comparison flows.
+- kv/tracks: KV metadata and asset retrieval flows.
+- kv/lyrics: KV lyrics retrieval flows.
 
 ## CLI Coding Pattern
 
@@ -44,10 +50,13 @@ Use thin command handlers in src/commands/*:
 - Services can compose other services across features through explicit imports.
 - Prefer explicit return types for service functions.
 - Keep infrastructure calls behind src/data and src/browser modules.
+- Domain features should not own KV account/catalog concepts.
+- KV integration modules should isolate website-specific behavior and payload shapes.
 
 ## Export Surface
 
 - src/features/index.ts is the primary application export barrel.
+- src/integrations/kv/index.ts is the KV integration export barrel for command/use-case orchestration.
 - src/index.ts re-exports src/features for library consumers.
 - Avoid creating catch-all utility buckets like a generic tools folder.
 

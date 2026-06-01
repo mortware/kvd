@@ -35,7 +35,8 @@ No test suite exists.
 ### Key Directories
 
 - `src/commands/` - Commander command modules and shared CLI helpers
-- `src/features/` - Domain-oriented services and exports (`accounts`, `catalog`, `tracks`, `lyrics`)
+- `src/features/` - Domain-oriented services and exports (`tracks`, `lyrics`)
+- `src/integrations/` - External system integrations (`kv/accounts`, `kv/catalog`, `kv/tracks`, `kv/lyrics`)
 - `src/browser/` - Playwright page objects for karaoke-version.com
 - `src/data/` - Azure service clients (CosmosDB, Blob)
 - `src/lib/` - Utilities (logger, automation context)

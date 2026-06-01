@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import db from '../data/db';
-import { compareCatalog, createAccount, importTrack, kvGetPurchases, listAccounts } from '../features';
+import { importTrack } from '../features';
+import { compareCatalog, createAccount, kvGetPurchases, listAccounts } from '../integrations/kv';
 import { Track, TrackImportStatus } from '../types';
 import { logInfo } from '../lib/logger';
 import {

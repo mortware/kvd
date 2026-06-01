@@ -3,7 +3,7 @@ import automation from '../../../lib/automation';
 import db from '../../../data/db';
 import songPagePublic from '../../../browser/songPagePublic';
 import { Mix, Stem, Track } from '../../../types';
-import { kvGetPurchases } from '../../catalog/services/kvGetPurchases';
+import { kvGetPurchases } from '../../../integrations/kv/catalog/services/kvGetPurchases';
 import { ImportTrackAssetsResult, importTrackAssets } from './importTrackAssets';
 import { logWarning } from '../../../lib/logger';
 
