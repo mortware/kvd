@@ -3,6 +3,7 @@ import path from 'path';
 import readline from 'readline/promises';
 import { spawn } from 'child_process';
 import { stdin as input, stdout as output } from 'process';
+import { checkbox, select } from '@inquirer/prompts';
 import blob from '../data/blob';
 import db from '../data/db';
 import { ImportMode } from '../features';
@@ -113,6 +114,33 @@ export function parseImportMode(value: string | undefined): ImportMode {
 }
 
 export async function promptTrackImportMode(): Promise<ImportMode | null> {
+  if (process.stdin.isTTY) {
+    const selectedMode = await select<ImportMode | null>({
+      message: 'Track import action',
+      pageSize: 8,
+      choices: [
+        {
+          value: 'import-missing',
+          name: 'import-missing  (import only missing metadata/assets)',
+        },
+        {
+          value: 'update',
+          name: 'update          (refresh metadata + import missing assets)',
+        },
+        {
+          value: 'overwrite',
+          name: 'overwrite       (refresh metadata + overwrite all assets)',
+        },
+        {
+          value: null,
+          name: 'cancel',
+        },
+      ],
+    });
+
+    return selectedMode;
+  }
+
   const rl = readline.createInterface({ input, output });
 
   try {
@@ -284,6 +312,30 @@ export async function chooseTrack(tracks: Track[], rl: readline.Interface): Prom
     return null;
   }
 
+  if (process.stdin.isTTY) {
+    const selectedIndex = await select<number | null>({
+      message: 'Choose a track',
+      pageSize: Math.min(15, tracks.length + 1),
+      choices: [
+        ...tracks.map((track, index) => ({
+          value: index,
+          name: `${track.artist} - ${track.title}`,
+          description: `${track.slug} | ${normalizeStatus(track.status)}`,
+        })),
+        {
+          value: null,
+          name: 'cancel',
+        },
+      ],
+    });
+
+    if (selectedIndex === null) {
+      return null;
+    }
+
+    return tracks[selectedIndex] ?? null;
+  }
+
   console.log('');
   console.log('Matching tracks:');
   console.log(renderTable(tracks, [
@@ -439,6 +491,24 @@ export async function chooseFiles(manifest: FileManifestItem[], rl: readline.Int
     return [];
   }
 
+  if (process.stdin.isTTY) {
+    const selectedIndexes = await checkbox<number>({
+      message: 'Select files to download',
+      pageSize: Math.min(16, manifest.length + 2),
+      choices: manifest.map((item, index) => ({
+        value: index,
+        name: `${item.displayName} [${item.kind}]`,
+        description: `${item.blobPath} | status=${item.status}`,
+        checked: item.available,
+        disabled: item.available ? false : 'unavailable in blob',
+      })),
+    });
+
+    return selectedIndexes
+      .map((index) => manifest[index])
+      .filter((item): item is FileManifestItem => Boolean(item));
+  }
+
   printManifest(manifest);
 
   const inputValue = await rl.question('Select files (all, 1,2,5-7): ');
@@ -509,6 +579,18 @@ export async function promptForAccountUsername(promptText: string): Promise<stri
     throw new Error('No accounts found. Create one first with: kvd account create --username <name> --password <password>');
   }
 
+  if (process.stdin.isTTY) {
+    return select<string>({
+      message: promptText,
+      pageSize: Math.min(12, accounts.length + 1),
+      choices: accounts.map((account) => ({
+        value: account.username,
+        name: account.username,
+        description: account.name ?? '',
+      })),
+    });
+  }
+
   console.log('');
   console.log('Available accounts:');
   console.log(renderTable(accounts, [
@@ -560,6 +642,34 @@ export function normalizeCatalogImportActionMode(action: string | undefined): Ca
 }
 
 export async function promptCatalogImportAction(): Promise<CatalogImportActionMode> {
+  if (process.stdin.isTTY) {
+    return select<CatalogImportActionMode>({
+      message: 'Post-validation action',
+      pageSize: 8,
+      choices: [
+        {
+          value: 'import-missing',
+          name: 'Import missing tracks',
+          description: 'default safe behavior',
+        },
+        {
+          value: 'update',
+          name: 'Update all comparable tracks',
+          description: 'refresh metadata + import missing assets',
+        },
+        {
+          value: 'overwrite',
+          name: 'Overwrite all comparable tracks',
+          description: 'refresh metadata + overwrite assets',
+        },
+        {
+          value: 'none',
+          name: 'No action',
+        },
+      ],
+    });
+  }
+
   const rl = readline.createInterface({ input, output });
 
   try {

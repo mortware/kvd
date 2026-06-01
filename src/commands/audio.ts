@@ -3,6 +3,7 @@ import path from 'path';
 import readline from 'readline/promises';
 import { spawn } from 'child_process';
 import { stdin as input, stdout as output } from 'process';
+import { checkbox } from '@inquirer/prompts';
 import { Command } from 'commander';
 import blob from '../data/blob';
 import db from '../data/db';
@@ -109,22 +110,40 @@ export async function runMix(args: CliArgs): Promise<void> {
     await fs.promises.mkdir(outputTrackDir, { recursive: true });
 
     console.log('');
-    console.log('Stems (select which to include in the backing mix):');
-    stems.forEach((stem, index) => {
-      console.log(`  ${index + 1}. ${stem.name}`);
-    });
+    let selectedStems: Array<(typeof stems)[number]> = [];
 
-    const stemAnswer = await rl.question('\nSelect stems (e.g. 1,2,4-6 or all): ');
-    const selectedIndexes = parseMultiSelect(stemAnswer, stems.length);
+    if (process.stdin.isTTY) {
+      const selectedStemIndexes = await checkbox<number>({
+        message: 'Select stems for backing mix',
+        pageSize: Math.min(14, stems.length + 2),
+        choices: stems.map((stem, index) => ({
+          value: index,
+          name: stem.name,
+          description: stem.slug,
+          checked: true,
+        })),
+      });
 
-    if (selectedIndexes.length === 0) {
+      selectedStems = selectedStemIndexes
+        .map((index) => stems[index])
+        .filter((stem): stem is NonNullable<typeof stem> => Boolean(stem));
+    } else {
+      console.log('Stems (select which to include in the backing mix):');
+      stems.forEach((stem, index) => {
+        console.log(`  ${index + 1}. ${stem.name}`);
+      });
+
+      const stemAnswer = await rl.question('\nSelect stems (e.g. 1,2,4-6 or all): ');
+      const selectedIndexes = parseMultiSelect(stemAnswer, stems.length);
+      selectedStems = selectedIndexes
+        .map((index) => stems[index - 1])
+        .filter((stem): stem is NonNullable<typeof stem> => Boolean(stem));
+    }
+
+    if (selectedStems.length === 0) {
       logWarning('No stems selected.');
       return;
     }
-
-    const selectedStems = selectedIndexes
-      .map((index) => stems[index - 1])
-      .filter((stem): stem is NonNullable<typeof stem> => Boolean(stem));
 
     logInfo('Ensuring stems are cached locally...');
     for (const stem of selectedStems) {
