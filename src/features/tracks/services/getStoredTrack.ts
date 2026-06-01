@@ -1,5 +1,5 @@
-import db from '../data/db';
-import { Track } from '../types';
+import db from '../../../data/db';
+import { Track } from '../../../types';
 
 type GetStoredTrackArgs = {
   slug: string;

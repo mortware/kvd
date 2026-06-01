@@ -1,5 +1,5 @@
-import { TrackImportStatus } from '../types';
-import db from '../data/db';
+import { TrackImportStatus } from '../../../types';
+import db from '../../../data/db';
 
 function isImportedAssetStatus(status: string | undefined): boolean {
   return status === 'imported' || status === 'synced';

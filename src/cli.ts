@@ -21,7 +21,7 @@ import {
   listAccounts,
   queryTracks,
   updateLyrics,
-} from './tools';
+} from './features';
 import { Track, TrackImportStatus } from './types';
 import { logError, logInfo, logWarning } from './lib/logger';
 

@@ -1,7 +1,7 @@
-import automation from "../lib/automation";
-import myDownloadsPage from "../browser/myDownloadsPage";
-import db from "../data/db";
-import { Track, CatalogCache } from "../types";
+import automation from "../../../lib/automation";
+import myDownloadsPage from "../../../browser/myDownloadsPage";
+import db from "../../../data/db";
+import { Track, CatalogCache } from "../../../types";
 
 type KvGetPurchasesArgs = {
   username: string;

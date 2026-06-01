@@ -1,5 +1,5 @@
-import db from '../data/db';
-import { Track, TrackImportStatus } from '../types';
+import db from '../../../data/db';
+import { Track, TrackImportStatus } from '../../../types';
 
 type QueryTracksArgs = {
   search?: string;              // Search in slug (contains artist-title, already normalized)

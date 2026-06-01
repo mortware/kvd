@@ -1,7 +1,5 @@
 import { chromium } from 'playwright';
-import { logDebug, logInfo, logError } from '../lib/logger';
-import { KaraokeVersionConfig } from '../consts';
-import { urlJoin } from '../lib/utils';
+import { logDebug, logInfo, logError } from '../../../lib/logger';
 
 type KvGetLyricsArgs = {
   slug: string;
@@ -25,7 +23,7 @@ async function kvGetLyrics({ slug }: KvGetLyricsArgs): Promise<KvGetLyricsResult
   
   try {
     // First, get the track from DB to find the source URL
-    const db = await import('../data/db');
+    const db = await import('../../../data/db');
     const track = await db.default.tracks.find(slug);
     
     if (!track || !track.source?.url) {

@@ -1,6 +1,6 @@
 import { kvGetPurchases } from "./kvGetPurchases";
-import db from "../data/db";
-import { Track } from "../types";
+import db from "../../../data/db";
+import { Track } from "../../../types";
 
 export type CatalogComparison = {
   inBoth: { sourceId: string; slug: string; artist: string; title: string }[];

@@ -1,8 +1,8 @@
-import { Track, AssetImportStatus } from '../types';
-import db from '../data/db';
-import blob from '../data/blob';
-import automation from '../lib/automation';
-import songPage from '../browser/songPage';
+import { Track, AssetImportStatus } from '../../../types';
+import db from '../../../data/db';
+import blob from '../../../data/blob';
+import automation from '../../../lib/automation';
+import songPage from '../../../browser/songPage';
 import path from 'path';
 
 export type ImportTrackAssetsResult = {

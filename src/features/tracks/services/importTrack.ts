@@ -1,11 +1,11 @@
 import { randomUUID } from 'crypto';
-import automation from '../lib/automation';
-import db from '../data/db';
-import songPagePublic from '../browser/songPagePublic';
-import { Mix, Stem, Track } from '../types';
-import { kvGetPurchases } from './kvGetPurchases';
+import automation from '../../../lib/automation';
+import db from '../../../data/db';
+import songPagePublic from '../../../browser/songPagePublic';
+import { Mix, Stem, Track } from '../../../types';
+import { kvGetPurchases } from '../../catalog/services/kvGetPurchases';
 import { ImportTrackAssetsResult, importTrackAssets } from './importTrackAssets';
-import { logWarning } from '../lib/logger';
+import { logWarning } from '../../../lib/logger';
 
 export type ImportMode = 'import-missing' | 'update' | 'overwrite';
 

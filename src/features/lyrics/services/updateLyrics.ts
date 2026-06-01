@@ -1,5 +1,5 @@
-import db from '../data/db';
-import { logInfo, logError } from '../lib/logger';
+import db from '../../../data/db';
+import { logInfo, logError } from '../../../lib/logger';
 
 type UpdateLyricsArgs = {
   slug: string;

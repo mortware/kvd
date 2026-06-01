@@ -1,7 +1,7 @@
 import KvdConfiguration from "./config";
 import { logError } from "./lib/logger";
 
-export * from "./tools";
+export * from "./features";
 export * from "./lib/utils.js";
 
 let config: Readonly<typeof KvdConfiguration>;

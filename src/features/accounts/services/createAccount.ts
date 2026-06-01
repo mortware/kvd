@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
-import db from "../data/db";
-import type { Account } from "../types/account";
+import db from "../../../data/db";
+import type { Account } from "../../../types/account";
 
 export type CreateAccountArgs = {
   username: string;

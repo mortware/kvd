@@ -1,6 +1,6 @@
-import { Track, AssetImportStatus } from '../types';
-import db from '../data/db';
-import blob from '../data/blob';
+import { Track, AssetImportStatus } from '../../../types';
+import db from '../../../data/db';
+import blob from '../../../data/blob';
 import path from 'path';
 
 export type RefreshImportStatusResult = {

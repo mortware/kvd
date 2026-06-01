@@ -36,6 +36,7 @@ No test suite exists.
 - `src/commands/` - Yargs CLI command handlers
 - `src/actions/` - Reusable business logic (exported from library)
 - `src/pages/` - Playwright page objects for karaoke-version.com
+- `src/features/` - Domain-oriented services and exports (`accounts`, `catalog`, `tracks`, `lyrics`)
 - `src/data/` - Azure service clients (CosmosDB, Blob, Queue)
 - `src/lib/` - Utilities (logger, automation context)
 - `src/types/` - TypeScript type definitions
