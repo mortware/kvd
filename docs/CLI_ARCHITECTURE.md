@@ -4,7 +4,8 @@ This project follows a feature-first CLI architecture.
 
 ## Folder Structure
 
-- src/cli.ts: CLI entrypoint and command wiring.
+- src/cli.ts: thin bootstrap (error handling, parse lifecycle, shutdown).
+- src/commands/: command registration modules and shared CLI utilities.
 - src/features/: Domain features with service modules and feature barrels.
 - src/data/: Infrastructure clients (CosmosDB and Blob).
 - src/browser/: Playwright page objects for karaoke-version flows.
@@ -27,7 +28,7 @@ Current features:
 
 ## CLI Coding Pattern
 
-Use thin command handlers in src/cli.ts:
+Use thin command handlers in src/commands/*:
 
 - Parse and validate arguments close to command definitions.
 - Delegate business logic to feature services.
@@ -57,5 +58,5 @@ When adding new behavior:
 1. Pick the target feature or add a new feature folder.
 2. Add/update a service in that feature.
 3. Export through the feature index.
-4. Wire command behavior in src/cli.ts.
+4. Wire command behavior in src/commands/* and compose in src/commands/program.ts.
 5. Keep tests and future test harnesses aligned to service boundaries.

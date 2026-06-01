@@ -17,27 +17,27 @@ No test suite exists.
 
 ## CLI Commands
 
-- `kvd catalog -u <username>` - Scrape user's purchased tracks, create/update in CosmosDB
-- `kvd import` - Process import queue, download audio files to Blob Storage
-- `kvd scan` - Check tracks for missing blobs
-- `kvd migrate` - Database migration utilities
-- `kvd account` - Account management
+- `kvd account list|create|import`
+- `kvd catalog purchases`
+- `kvd track list|get|query|import|import-status|refresh-status|download|mix`
+- `kvd download` and `kvd mix` as top-level shortcuts
+- `kvd lyrics get|update`
 
 ## Architecture
 
 ### Data Flow
 
-1. **Catalog**: Playwright scrapes karaoke-version.com → stores track metadata in CosmosDB
-2. **Scan**: Checks CosmosDB tracks against Blob Storage → queues missing files
-3. **Import**: Processes Azure Queue messages → downloads audio via Playwright → uploads to Blob Storage
+1. **Catalog**: Playwright reads account purchases from karaoke-version.com and updates account catalog cache.
+2. **Track Import**: Per-track import resolves metadata + ownership and updates CosmosDB records.
+3. **Asset Import**: Missing/overwrite audio assets are fetched via Playwright and uploaded to Blob Storage.
+4. **Download/Mix**: CLI downloads imported assets locally and optionally builds WAV outputs via ffmpeg.
 
 ### Key Directories
 
-- `src/commands/` - Yargs CLI command handlers
-- `src/actions/` - Reusable business logic (exported from library)
-- `src/pages/` - Playwright page objects for karaoke-version.com
+- `src/commands/` - Commander command modules and shared CLI helpers
 - `src/features/` - Domain-oriented services and exports (`accounts`, `catalog`, `tracks`, `lyrics`)
-- `src/data/` - Azure service clients (CosmosDB, Blob, Queue)
+- `src/browser/` - Playwright page objects for karaoke-version.com
+- `src/data/` - Azure service clients (CosmosDB, Blob)
 - `src/lib/` - Utilities (logger, automation context)
 - `src/types/` - TypeScript type definitions
 
@@ -49,7 +49,6 @@ Configuration is loaded from `kvd-config.json` in the working directory:
 {
   "azure": {
     "blob": { "url": "...", "container": "..." },
-    "queue": { "url": "...", "import": "..." },
     "cosmos": { "url": "..." }
   },
   "headless": true,
@@ -112,4 +111,4 @@ import { logInfo, logError, logDebug, logWarning } from './lib/logger';
 
 ## Dual Export
 
-The package exports both a CLI (`dist/cli.js`) and a library (`dist/index.js`). Public actions are exported from `src/actions/index.ts`.
+The package exports both a CLI (`dist/cli.js`) and a library (`dist/index.js`). Public feature APIs are exported from `src/features/index.ts`.
