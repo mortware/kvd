@@ -63,7 +63,7 @@ Authentication uses `DefaultAzureCredential`, so local `az login` works for deve
 ### Audio workflow
 
 - `kvd download` : Search tracks and download selected files from Blob Storage.
-- `kvd mix` : Create WAV backing/click files from imported stems with `ffmpeg`.
+- `kvd mix` : Create local backing mixes from imported stems with `ffmpeg` (WAV by default, optional MP3).
 
 Examples:
 
@@ -83,21 +83,40 @@ What this does:
 
 - Finds matching tracks, then prompts you to choose one.
 - Shows all available stems for that track, then prompts you to select which stems to include in the backing mix.
+- Prompts for target key with the source key as default and +/- semitone options with key names.
 - Ensures selected stem MP3s and click MP3 are cached under `downloads/<track-slug>/`.
-- Writes final WAV outputs under `mixes/<track-slug>/`:
-  - `<track-slug>-backing.wav` (selected stems mixed)
-  - `<track-slug>-click.wav` (click track only)
+- Writes final output under `mixes/<track-slug>/`:
+  - `<track-slug>-backing.wav` (or `.mp3` with `--mp3`)
+- When key is changed, appends the target key and semitone delta to backing filename (example: `-c-sharp+2`).
+- Excludes click stems from selection defaults.
+- Never pitch-shifts click tracks, even when key transposition is applied.
+- Does not render a separate click output by default.
 - By default, mutes the first bar in the backing WAV (count-in suppression).
-- Leaves the click WAV unmodified (no first-bar mute).
-- Validates that backing and click WAV durations match and reports pass/fail.
+- If click output is enabled, leaves the click file unmodified (no first-bar mute) and validates backing/click duration match.
 
-Optional flag:
+Optional flags:
 
 ```bash
 kvd track mix --search "bruno" --keep-count-in
+kvd track mix --search "bruno" --include-click-track
+kvd track mix --search "bruno" --mp3
 ```
 
 Use `--keep-count-in` to keep the first-bar count-in audible in the backing WAV.
+Use `--include-click-track` to also render `<track-slug>-click.wav` (or `.mp3` with `--mp3`).
+
+### ffmpeg rubberband requirement
+
+Key transposition in `kvd mix` uses the `rubberband` audio filter.
+
+Check support in your local ffmpeg build:
+
+```bash
+ffmpeg -hide_banner -filters | Select-String rubberband
+ffmpeg -hide_banner -buildconf | Select-String "librubberband|rubberband"
+```
+
+If these commands show `rubberband` and `--enable-librubberband`, key shifting is available.
 
 ### Accounts and catalog
 
@@ -147,5 +166,6 @@ npm run download -- --search "bruno"
 ## Notes
 
 - `kvd mix` requires `ffmpeg` in your PATH.
+- `kvd mix` key transposition requires `ffmpeg` built with `librubberband` support.
 - `kvd download` and import commands operate on your Azure-hosted data.
 - `kvd catalog purchases`, `kvd track import`, and related import commands perform browser automation against karaoke-version.com using stored account credentials.

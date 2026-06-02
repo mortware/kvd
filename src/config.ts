@@ -1,4 +1,5 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 import { ConfigDefaults } from "./consts";
 import { z } from "zod";
@@ -14,11 +15,14 @@ interface KvdConfig {
             url: string;
         };
     };
+    downloadsDir?: string;
     processDelay?: number;
     headless?: boolean;
 }
 
-const configPath = path.join(process.cwd(), ConfigDefaults.configFileName);
+const localConfigPath = path.join(process.cwd(), ConfigDefaults.configFileName);
+const homeConfigPath = path.join(os.homedir(), ".kvd", ConfigDefaults.configFileName);
+const configPath = fs.existsSync(localConfigPath) ? localConfigPath : homeConfigPath;
 let fileConfig: KvdConfig = {
     azure: {
         blob: { url: '', container: '' },
@@ -41,6 +45,7 @@ const KvdConfiguration: KvdConfig = {
             url: fileConfig.azure?.cosmos?.url || ''
         },
     },
+    downloadsDir: fileConfig.downloadsDir ?? path.join(os.homedir(), '.kvd', 'downloads'),
     processDelay: fileConfig.processDelay ?? 0,
     headless: fileConfig.headless ?? true,
 };

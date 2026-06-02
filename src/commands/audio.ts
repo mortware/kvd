@@ -3,10 +3,11 @@ import path from 'path';
 import readline from 'readline/promises';
 import { spawn } from 'child_process';
 import { stdin as input, stdout as output } from 'process';
-import { checkbox } from '@inquirer/prompts';
+import { checkbox, confirm, select } from '@inquirer/prompts';
 import { Command } from 'commander';
 import blob from '../data/blob';
 import db from '../data/db';
+import config from '../config';
 import { Track } from '../types';
 import { logInfo, logWarning } from '../lib/logger';
 import {
@@ -27,6 +28,147 @@ import {
 const COUNT_IN_BARS_TO_MUTE = 1;
 const DEFAULT_BEATS_PER_BAR = 4;
 const DURATION_MATCH_TOLERANCE_SECONDS = 0.02;
+const PITCH_CLASS_SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const;
+const PITCH_CLASS_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'] as const;
+
+type ParsedSongKey = {
+  pitchClass: number;
+  isMinor: boolean;
+  preferFlatNames: boolean;
+};
+
+function normalizeAccidentals(keyText: string): string {
+  return keyText
+    .replace(/♭/g, 'b')
+    .replace(/♯/g, '#')
+    .trim();
+}
+
+function parseSongKey(songKey: string | undefined): ParsedSongKey | null {
+  if (!songKey) {
+    return null;
+  }
+
+  const normalized = normalizeAccidentals(songKey)
+    .replace(/\s+/g, '')
+    .replace(/major$/i, '')
+    .replace(/minor$/i, 'm');
+  const match = normalized.match(/^([A-G])([#b]?)(m)?$/i);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, rawNote, accidental, minorSuffix] = match;
+  const note = rawNote?.toUpperCase();
+  if (!note) {
+    return null;
+  }
+  const keyName = `${note.toUpperCase()}${accidental ?? ''}`;
+  const pitchClass = PITCH_CLASS_SHARP.findIndex((name) => name === keyName);
+  const fallbackPitchClass = PITCH_CLASS_FLAT.findIndex((name) => name === keyName);
+  const resolvedPitchClass = pitchClass >= 0 ? pitchClass : fallbackPitchClass;
+
+  if (resolvedPitchClass < 0) {
+    return null;
+  }
+
+  return {
+    pitchClass: resolvedPitchClass,
+    isMinor: minorSuffix?.toLowerCase() === 'm',
+    preferFlatNames: accidental === 'b',
+  };
+}
+
+function transposeSongKey(base: ParsedSongKey, semitones: number): string {
+  const noteIndex = ((base.pitchClass + semitones) % 12 + 12) % 12;
+  const noteName = (base.preferFlatNames ? PITCH_CLASS_FLAT : PITCH_CLASS_SHARP)[noteIndex] ?? PITCH_CLASS_SHARP[noteIndex] ?? 'C';
+  return base.isMinor ? `${noteName}m` : noteName;
+}
+
+function semitonesToPitchFactor(semitones: number): number {
+  return 2 ** (semitones / 12);
+}
+
+function keyNameToFileToken(keyName: string): string {
+  const normalized = normalizeAccidentals(keyName).replace(/\s+/g, '');
+  const match = normalized.match(/^([A-G])([#b]?)(m)?$/i);
+
+  if (!match) {
+    return normalized
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  const [, rawNote, accidental, minorSuffix] = match;
+  const note = rawNote?.toLowerCase() ?? 'key';
+  const accidentalToken = accidental === '#'
+    ? '-sharp'
+    : accidental === 'b'
+      ? '-flat'
+      : '';
+  const minorToken = minorSuffix?.toLowerCase() === 'm' ? '-minor' : '';
+  return `${note}${accidentalToken}${minorToken}`;
+}
+
+function isClickStem(stem: { name: string; slug: string }): boolean {
+  const normalized = `${stem.name} ${stem.slug}`.toLowerCase();
+  return normalized.includes('click') || normalized.includes('count') || normalized.includes('metronome');
+}
+
+async function promptMixKeyShift(track: Track, rl: readline.Interface): Promise<number> {
+  const parsedBaseKey = parseSongKey(track.songKey);
+  const choices: Array<{ value: number; name: string }> = [];
+
+  for (let semitones = 6; semitones >= 1; semitones -= 1) {
+    const signLabel = `+${semitones}`;
+    const keyLabel = parsedBaseKey ? transposeSongKey(parsedBaseKey, semitones) : 'Unknown key';
+
+    choices.push({
+      value: semitones,
+      name: `${signLabel} semitone${Math.abs(semitones) === 1 ? '' : 's'} (${keyLabel})`,
+    });
+  }
+
+  choices.push({
+    value: 0,
+    name: `No change (${parsedBaseKey ? transposeSongKey(parsedBaseKey, 0) : track.songKey || 'Unknown'})`,
+  });
+
+  for (let semitones = -1; semitones >= -6; semitones -= 1) {
+    const signLabel = `${semitones}`;
+    const keyLabel = parsedBaseKey ? transposeSongKey(parsedBaseKey, semitones) : 'Unknown key';
+
+    choices.push({
+      value: semitones,
+      name: `${signLabel} semitone${Math.abs(semitones) === 1 ? '' : 's'} (${keyLabel})`,
+    });
+  }
+
+  if (process.stdin.isTTY) {
+    return select<number>({
+      message: `Select target key for mix (source key: ${track.songKey || 'Unknown'})`,
+      pageSize: Math.min(16, choices.length + 2),
+      choices,
+      default: 0,
+    });
+  }
+
+  console.log('');
+  console.log(`Select target key for mix (source key: ${track.songKey || 'Unknown'}):`);
+  choices.forEach((choice, index) => {
+    console.log(`  ${index + 1}. ${choice.name}`);
+  });
+
+  const selectedText = await rl.question(`Choose key [1-${choices.length}]: `);
+  const selectedIndex = Number.parseInt(selectedText.trim(), 10) - 1;
+  if (Number.isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= choices.length) {
+    throw new Error('Invalid key selection.');
+  }
+
+  return choices[selectedIndex]?.value ?? 0;
+}
 
 function getCountInSilenceSeconds(track: Track): number | null {
   const bpm = track.tempo?.bpm;
@@ -104,7 +246,7 @@ export async function runMix(args: CliArgs): Promise<void> {
       return;
     }
 
-    const cacheRoot = path.resolve(process.cwd(), 'downloads');
+    const cacheRoot = path.resolve(config.downloadsDir!);
     const cacheTrackDir = path.join(cacheRoot, selectedTrack.slug);
     const outputTrackDir = path.join(args.outputDir, selectedTrack.slug);
     await fs.promises.mkdir(outputTrackDir, { recursive: true });
@@ -120,7 +262,7 @@ export async function runMix(args: CliArgs): Promise<void> {
           value: index,
           name: stem.name,
           description: stem.slug,
-          checked: true,
+          checked: !isClickStem(stem),
         })),
       });
 
@@ -130,11 +272,16 @@ export async function runMix(args: CliArgs): Promise<void> {
     } else {
       console.log('Stems (select which to include in the backing mix):');
       stems.forEach((stem, index) => {
-        console.log(`  ${index + 1}. ${stem.name}`);
+        console.log(`  ${index + 1}. ${stem.name}${isClickStem(stem) ? ' (click track; excluded by default)' : ''}`);
       });
 
-      const stemAnswer = await rl.question('\nSelect stems (e.g. 1,2,4-6 or all): ');
-      const selectedIndexes = parseMultiSelect(stemAnswer, stems.length);
+      const stemAnswer = (await rl.question('\nSelect stems (e.g. 1,2,4-6, all, or Enter for default): ')).trim();
+      const selectedIndexes = (!stemAnswer || stemAnswer.toLowerCase() === 'all')
+        ? stems
+          .map((stem, index) => ({ stem, index }))
+          .filter(({ stem }) => !isClickStem(stem))
+          .map(({ index }) => index + 1)
+        : parseMultiSelect(stemAnswer, stems.length);
       selectedStems = selectedIndexes
         .map((index) => stems[index - 1])
         .filter((stem): stem is NonNullable<typeof stem> => Boolean(stem));
@@ -143,6 +290,31 @@ export async function runMix(args: CliArgs): Promise<void> {
     if (selectedStems.length === 0) {
       logWarning('No stems selected.');
       return;
+    }
+
+    const selectedKeyShiftSemitones = await promptMixKeyShift(selectedTrack, rl);
+    const parsedTrackKey = parseSongKey(selectedTrack.songKey);
+
+    if (selectedKeyShiftSemitones === 0) {
+      logInfo(`Mix key unchanged (${selectedTrack.songKey || 'Unknown'}).`);
+    } else {
+      const sourceKey = parsedTrackKey ? transposeSongKey(parsedTrackKey, 0) : selectedTrack.songKey || 'Unknown';
+      const targetKey = parsedTrackKey
+        ? transposeSongKey(parsedTrackKey, selectedKeyShiftSemitones)
+        : `${selectedKeyShiftSemitones > 0 ? '+' : ''}${selectedKeyShiftSemitones} semitones`;
+      logInfo(`Applying key shift: ${sourceKey} -> ${targetKey}. Click tracks are excluded from pitch shifting.`);
+    }
+
+    if (process.stdin.isTTY) {
+      if (args.keepCountIn === false) {
+        args.keepCountIn = !(await confirm({ message: 'Mute count-in bar in output?', default: true }));
+      }
+      if (args.mp3 === false) {
+        args.mp3 = (await select<'wav' | 'mp3'>({ message: 'Output format', choices: [{ value: 'wav', name: 'WAV' }, { value: 'mp3', name: 'MP3' }] })) === 'mp3';
+      }
+      if (args.includeClickTrack === false) {
+        args.includeClickTrack = await confirm({ message: 'Also render a separate click track output?', default: false });
+      }
     }
 
     logInfo('Ensuring stems are cached locally...');
@@ -162,8 +334,15 @@ export async function runMix(args: CliArgs): Promise<void> {
       logWarning('intro-count-click.mp3 not found in blob storage. Click track output will be skipped.');
     }
 
-    const backingOut = path.join(outputTrackDir, `${selectedTrack.slug}-backing.wav`);
-    const clickOut = path.join(outputTrackDir, `${selectedTrack.slug}-click.wav`);
+    const ext = args.mp3 ? 'mp3' : 'wav';
+    const resolvedTargetKey = parsedTrackKey
+      ? transposeSongKey(parsedTrackKey, selectedKeyShiftSemitones)
+      : selectedTrack.songKey;
+    const keyShiftSuffix = selectedKeyShiftSemitones === 0
+      ? ''
+      : `-${resolvedTargetKey ? keyNameToFileToken(resolvedTargetKey) : 'shift'}${selectedKeyShiftSemitones > 0 ? `+${selectedKeyShiftSemitones}` : `${selectedKeyShiftSemitones}`}`;
+    const backingOut = path.join(outputTrackDir, `${selectedTrack.slug}-backing${keyShiftSuffix}.${ext}`);
+    const clickOut = path.join(outputTrackDir, `${selectedTrack.slug}-click.${ext}`);
 
     const stemCount = selectedStems.length;
     const volumeScale = (1 / stemCount).toFixed(4);
@@ -182,7 +361,12 @@ export async function runMix(args: CliArgs): Promise<void> {
       logInfo('Leaving count-in audible in backing mix output (--keep-count-in).');
     }
 
-    const filterParts = selectedStems.map((_, index) => `[${index}]volume=${volumeScale}[a${index}]`);
+    const keyShiftPitchFactor = semitonesToPitchFactor(selectedKeyShiftSemitones);
+    const filterParts = selectedStems.map((stem, index) => {
+      const applyPitchShift = selectedKeyShiftSemitones !== 0 && !isClickStem(stem);
+      const pitchFilter = applyPitchShift ? `,rubberband=pitch=${keyShiftPitchFactor.toFixed(6)}` : '';
+      return `[${index}]volume=${volumeScale}${pitchFilter}[a${index}]`;
+    });
     const mixInputs = selectedStems.map((_, index) => `[a${index}]`).join('');
     const countInMuteFilter = (!args.keepCountIn && countInSilenceSeconds !== null)
       ? `,volume=0:enable='lt(t,${countInSilenceSeconds.toFixed(3)})'`
@@ -203,7 +387,8 @@ export async function runMix(args: CliArgs): Promise<void> {
       '-ac',
       '2',
       '-c:a',
-      'pcm_s16le',
+      args.mp3 ? 'libmp3lame' : 'pcm_s16le',
+      ...(args.mp3 ? ['-q:a', '0'] : []),
       '-y',
       backingOut,
     ];
@@ -224,7 +409,7 @@ export async function runMix(args: CliArgs): Promise<void> {
       logInfo(`Backing mix written to: ${backingOut}`);
     }
 
-    if (clickLocalPath) {
+    if (clickLocalPath && args.includeClickTrack) {
       const clickArgs = [
         '-i',
         clickLocalPath,
@@ -233,7 +418,8 @@ export async function runMix(args: CliArgs): Promise<void> {
         '-ac',
         '2',
         '-c:a',
-        'pcm_s16le',
+        args.mp3 ? 'libmp3lame' : 'pcm_s16le',
+        ...(args.mp3 ? ['-q:a', '0'] : []),
         '-y',
         clickOut,
       ];
@@ -264,6 +450,8 @@ export async function runMix(args: CliArgs): Promise<void> {
           `Duration validation failed: backing=${backingDurationSeconds.toFixed(3)}s, click=${clickDurationSeconds.toFixed(3)}s (delta=${durationDelta.toFixed(3)}s).`,
         );
       }
+    } else if (!args.includeClickTrack) {
+      logInfo('Skipping separate click track output by default. Use --include-click-track to render it.');
     }
 
     logInfo(`Mix outputs directory: ${outputTrackDir}`);
@@ -356,19 +544,27 @@ export function addSharedDownloadMixOptions(command: Command, defaultOutputDir: 
 export function registerAudioCommands(program: Command): void {
   addSharedDownloadMixOptions(
     program.command('download').description('Search tracks and download available files from Azure Blob Storage.'),
-    'downloads',
+    config.downloadsDir!,
   ).action(async (options: { search?: string; username?: string; slug?: string; output?: string; limit?: number }) => {
     await runDownload(toCliArgs(options));
   });
 
   addSharedDownloadMixOptions(
     program.command('mix').description('Create local WAV mixes from downloaded stem files via ffmpeg.'),
-    'mixes',
+    '.',
   ).option(
     '--keep-count-in',
     'Keep first-bar count-in audible in backing output (default mutes first bar).',
     false,
-  ).action(async (options: { search?: string; username?: string; slug?: string; output?: string; limit?: number; keepCountIn?: boolean }) => {
+  ).option(
+    '--mp3',
+    'Output as MP3 instead of WAV (uses libmp3lame VBR quality 0).',
+    false,
+  ).option(
+    '--include-click-track',
+    'Also render a separate click track output file (disabled by default).',
+    false,
+  ).action(async (options: { search?: string; username?: string; slug?: string; output?: string; limit?: number; keepCountIn?: boolean; mp3?: boolean; includeClickTrack?: boolean }) => {
     await runMix(toCliArgs(options));
   });
 }
@@ -376,19 +572,27 @@ export function registerAudioCommands(program: Command): void {
 export function registerTrackAudioAliases(track: Command): void {
   addSharedDownloadMixOptions(
     track.command('download').description('Shorthand for: kvd download'),
-    'downloads',
+    config.downloadsDir!,
   ).action(async (options: { search?: string; username?: string; slug?: string; output?: string; limit?: number }) => {
     await runDownload(toCliArgs(options));
   });
 
   addSharedDownloadMixOptions(
     track.command('mix').description('Shorthand for: kvd mix'),
-    'mixes',
+    '.',
   ).option(
     '--keep-count-in',
     'Keep first-bar count-in audible in backing output (default mutes first bar).',
     false,
-  ).action(async (options: { search?: string; username?: string; slug?: string; output?: string; limit?: number; keepCountIn?: boolean }) => {
+  ).option(
+    '--mp3',
+    'Output as MP3 instead of WAV (uses libmp3lame VBR quality 0).',
+    false,
+  ).option(
+    '--include-click-track',
+    'Also render a separate click track output file (disabled by default).',
+    false,
+  ).action(async (options: { search?: string; username?: string; slug?: string; output?: string; limit?: number; keepCountIn?: boolean; mp3?: boolean; includeClickTrack?: boolean }) => {
     await runMix(toCliArgs(options));
   });
 }

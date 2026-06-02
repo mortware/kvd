@@ -18,6 +18,8 @@ export type CliArgs = {
   limit: number;
   slug?: string;
   keepCountIn?: boolean;
+  mp3?: boolean;
+  includeClickTrack?: boolean;
 };
 
 export type FileManifestItem = {
@@ -53,6 +55,8 @@ export function toCliArgs(options: {
   output?: string;
   limit?: number;
   keepCountIn?: boolean;
+  mp3?: boolean;
+  includeClickTrack?: boolean;
 }): CliArgs {
   const parsedLimit = options.limit ?? 25;
 
@@ -67,6 +71,8 @@ export function toCliArgs(options: {
     outputDir: path.resolve(process.cwd(), options.output ?? 'downloads'),
     limit: Math.min(parsedLimit, 100),
     keepCountIn: options.keepCountIn ?? false,
+    mp3: options.mp3 ?? false,
+    includeClickTrack: options.includeClickTrack ?? false,
   };
 }
 
